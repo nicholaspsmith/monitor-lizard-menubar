@@ -63,18 +63,18 @@ public final class CoreBrightnessNightShift: NightShiftBackend {
                                        schedule: .init(from: .init(hour: 0, minute: 0), to: .init(hour: 0, minute: 0)),
                                        disableFlags: 0, available: false)
         let ok = withUnsafeMutablePointer(to: &data) { client.getBlueLightStatus(UnsafeMutableRawPointer($0)) }
-        var strength: Float = 0
-        _ = client.getStrength(&strength)
         guard ok, (0...4).contains(data.mode) else {
             Log.nightshift.error("CBBlueLightClient status looked wrong (ok=\(ok) mode=\(data.mode)); treating Night Shift as unavailable")
             return NightShiftStatus(available: false, enabled: false, active: false, strength: 0)
         }
-        return NightShiftStatus(available: data.available, enabled: data.enabled, active: data.active, strength: max(0, min(1, strength)))
+        var strength: Float = 0
+        _ = client.getStrength(&strength)
+        return NightShiftStatus(available: data.available, enabled: data.enabled, active: data.active, strength: DisplayServicesBrightness.clamp(strength))
     }
 
     public func setEnabled(_ enabled: Bool) -> Bool { client.setEnabled(enabled) }
 
-    public func setStrength(_ strength: Float) -> Bool { client.setStrength(max(0, min(1, strength)), commit: true) }
+    public func setStrength(_ strength: Float) -> Bool { client.setStrength(DisplayServicesBrightness.clamp(strength), commit: true) }
 
     public func onChange(_ handler: @escaping () -> Void) { handlers.append(handler) }
 }

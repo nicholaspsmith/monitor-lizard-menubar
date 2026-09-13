@@ -12,4 +12,10 @@ final class PrivateBackendsTests: XCTestCase {
         XCTAssertTrue(s.available, "this Mac supports Night Shift")
         XCTAssertTrue((0...1).contains(s.strength))
     }
+
+    func testClampBounds() {
+        XCTAssertEqual(DisplayServicesBrightness.clamp(1.4), 1)
+        XCTAssertEqual(DisplayServicesBrightness.clamp(-0.2), 0)
+        XCTAssertEqual(DisplayServicesBrightness.clamp(0.5), 0.5)
+    }
 }
