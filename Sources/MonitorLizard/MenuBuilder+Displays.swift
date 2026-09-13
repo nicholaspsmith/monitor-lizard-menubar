@@ -25,20 +25,22 @@ extension App {
 
         if entry.isExternalControllable {
             let b = NSMenuItem()
-            b.view = SliderRow(title: "Brightness", symbol: "sun.max",
+            let brightnessView = SliderRow(title: "Brightness", symbol: "sun.max",
                                value: entry.brightness.map { Double($0.current) }, maximum: Double(entry.brightness?.maximum ?? 100),
                                format: { "\(Int($0.rounded()))" }) { [weak self] v in
                 self?.model.setBrightness(entry.info.id, UInt16(v.rounded()))
             }
-            sliderRows[entry.info.id, default: [:]][.brightness] = b.view as? SliderRow
+            b.view = brightnessView
+            sliderRows[entry.info.id, default: [:]][.brightness] = brightnessView
             menu.addItem(b)
             let c = NSMenuItem()
-            c.view = SliderRow(title: "Contrast", symbol: "circle.lefthalf.filled",
+            let contrastView = SliderRow(title: "Contrast", symbol: "circle.lefthalf.filled",
                                value: entry.contrast.map { Double($0.current) }, maximum: Double(entry.contrast?.maximum ?? 100),
                                format: { "\(Int($0.rounded()))" }) { [weak self] v in
                 self?.model.setContrast(entry.info.id, UInt16(v.rounded()))
             }
-            sliderRows[entry.info.id, default: [:]][.contrast] = c.view as? SliderRow
+            c.view = contrastView
+            sliderRows[entry.info.id, default: [:]][.contrast] = contrastView
             menu.addItem(c)
         } else {
             let none = NSMenuItem(title: "No DDC control", action: nil, keyEquivalent: "")
@@ -49,8 +51,9 @@ extension App {
 
         let res = NSMenuItem()
         res.view = ResolutionRow(plan: entry.plan) { [weak self] spec in
-            let rc = self?.model.apply(spec, to: entry.info.id)
-            if rc != .success { Log.modes.error("apply failed rc=\(rc?.rawValue ?? -1)") }
+            guard let self else { return }
+            let rc = self.model.apply(spec, to: entry.info.id)
+            if rc != .success { Log.modes.error("apply failed rc=\(rc.rawValue)") }
         }
         res.submenu = ResolutionMenu.make(plan: entry.plan, displayID: entry.info.id, target: self, action: #selector(pickMode(_:)))
         menu.addItem(res)
