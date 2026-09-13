@@ -8,9 +8,8 @@ public struct FramebufferEntry: Equatable {
     public let name: String
     public let productID: UInt32?
     public let serial: UInt32?
-    public let entry: UInt32
-    public init(name: String, productID: UInt32?, serial: UInt32?, entry: UInt32) {
-        self.name = name; self.productID = productID; self.serial = serial; self.entry = entry
+    public init(name: String, productID: UInt32?, serial: UInt32?) {
+        self.name = name; self.productID = productID; self.serial = serial
     }
 }
 
