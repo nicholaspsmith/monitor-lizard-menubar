@@ -69,4 +69,22 @@ final class DisplayModesTests: XCTestCase {
     func testLabel() {
         XCTAssertEqual(Self.current.label, "2560×1067")
     }
+
+    func testValidateAcceptsASpecFromTheFixture() {
+        XCTAssertEqual(DisplayModes.validate(Self.current, against: Self.specs), .success)
+    }
+
+    func testValidateRejectsAnOutOfRangeIndex() {
+        let outOfRange = ModeSpec(index: 999, width: 2560, height: 1067, pixelWidth: 5120, pixelHeight: 2134, refresh: 60, usable: true)
+        XCTAssertEqual(DisplayModes.validate(outOfRange, against: Self.specs), .rangeCheck)
+    }
+
+    func testValidateRejectsAStaleIndexPointingAtADifferentMode() {
+        // Same fields as the current 2560×1067 spec, but its index now names the 3840×1600 entry.
+        let nativeIndex = Self.specs.first { $0.width == 3840 && $0.height == 1600 && $0.refresh == 60 }!.index
+        let stale = ModeSpec(index: nativeIndex, width: Self.current.width, height: Self.current.height,
+                              pixelWidth: Self.current.pixelWidth, pixelHeight: Self.current.pixelHeight,
+                              refresh: Self.current.refresh, usable: Self.current.usable)
+        XCTAssertEqual(DisplayModes.validate(stale, against: Self.specs), .illegalArgument)
+    }
 }
