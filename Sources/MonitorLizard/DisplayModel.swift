@@ -91,12 +91,12 @@ final class DisplayModel {
                 entries[index].builtInBrightness = brightness.brightness(entry.info.id)
                 continue
             }
-            guard let ddc = entry.ddc, !entry.ddcUnavailable else { continue }
+            guard let ddc = entry.ddc else { continue }
             let id = entry.info.id
             ddc.read(.brightness) { [weak self] result in
-                DispatchQueue.main.async { self?.store(id: id, code: .brightness, result: result) }
+                DispatchQueue.main.async { self?.store(id: id, ddc: ddc, code: .brightness, result: result) }
                 ddc.read(.contrast) { [weak self] result in
-                    DispatchQueue.main.async { self?.store(id: id, code: .contrast, result: result) }
+                    DispatchQueue.main.async { self?.store(id: id, ddc: ddc, code: .contrast, result: result) }
                 }
             }
         }
@@ -115,11 +115,16 @@ final class DisplayModel {
         if changed { onChange?() }
     }
 
-    private func store(id: CGDirectDisplayID, code: VCPCode, result: Result<VCPValue, DDCError>) {
+    private func store(id: CGDirectDisplayID, ddc: DDCService, code: VCPCode, result: Result<VCPValue, DDCError>) {
         guard let i = entries.firstIndex(where: { $0.info.id == id }) else { return }
+        // `refresh()` drops old services wholesale on reconfiguration; a
+        // completion from a service that's no longer this entry's must not
+        // write into the entry that replaced it.
+        guard entries[i].ddc === ddc else { return }
         switch result {
         case .success(let value):
             if code == .brightness { entries[i].brightness = value } else { entries[i].contrast = value }
+            entries[i].ddcUnavailable = false
         case .failure(let error):
             Log.ddc.error("display \(id) \(code.rawValue, format: .hex) read failed: \(String(describing: error))")
             entries[i].ddcUnavailable = true
@@ -136,7 +141,7 @@ final class DisplayModel {
             switch result {
             case .success:
                 DispatchQueue.main.async {
-                    self?.store(id: id, code: code, result: result)
+                    self?.store(id: id, ddc: ddc, code: code, result: result)
                     self?.onWrite?()
                 }
             case .failure(let error):
@@ -146,7 +151,7 @@ final class DisplayModel {
                 // own failure through `store`.
                 Log.ddc.error("display \(id) \(code.rawValue, format: .hex) write failed: \(String(describing: error))")
                 ddc.read(code) { [weak self] readResult in
-                    DispatchQueue.main.async { self?.store(id: id, code: code, result: readResult) }
+                    DispatchQueue.main.async { self?.store(id: id, ddc: ddc, code: code, result: readResult) }
                 }
             }
         }

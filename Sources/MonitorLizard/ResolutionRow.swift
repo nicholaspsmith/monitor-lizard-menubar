@@ -8,10 +8,10 @@ final class ResolutionRow: NSView {
     private let slider: NSSlider
     private let label = NSTextField(labelWithString: "")
     private let plan: ModePlan
-    private let onApply: (ModeSpec) -> Void
+    private let onApply: (ModeSpec) -> CGError
     private var lastApplied: Int?
 
-    init(plan: ModePlan, onApply: @escaping (ModeSpec) -> Void) {
+    init(plan: ModePlan, onApply: @escaping (ModeSpec) -> CGError) {
         self.plan = plan
         self.onApply = onApply
         let stops = max(plan.hiDPI.count - 1, 0)
@@ -41,7 +41,7 @@ final class ResolutionRow: NSView {
             // real label, park the knob at the nearest stop by width, and
             // leave `lastApplied` nil so picking that stop still applies it.
             label.stringValue = current.label
-            if let nearest = plan.hiDPI.indices.min(by: { abs(plan.hiDPI[$0].width - current.width) < abs(plan.hiDPI[$1].width - current.width) }) {
+            if let nearest = Self.nearestStopIndex(to: current, in: plan.hiDPI) {
                 slider.doubleValue = Double(nearest)
             }
         }
@@ -68,6 +68,8 @@ final class ResolutionRow: NSView {
     @objc private func slid(_ sender: NSSlider) {
         let i = Int(sender.doubleValue.rounded())
         guard plan.hiDPI.indices.contains(i) else { return }
+        // Live preview while dragging: track the label to the knob even
+        // though the mode switch itself only fires on release (below).
         label.stringValue = plan.hiDPI[i].label
         // NSSlider with isContinuous fires on every tick of a mouse drag, so
         // gate on "not an in-progress drag" rather than only `.leftMouseUp` —
@@ -76,8 +78,30 @@ final class ResolutionRow: NSView {
         let type = NSApp.currentEvent?.type
         let dragging = type == .leftMouseDragged || type == .leftMouseDown
         guard !dragging, i != lastApplied else { return }
-        lastApplied = i
-        onApply(plan.hiDPI[i])
+        let result = onApply(plan.hiDPI[i])
+        if result == .success {
+            // The label already shows plan.hiDPI[i].label from the preview
+            // update above; just record the confirmed stop.
+            lastApplied = i
+        } else {
+            // Restore the knob and label to the previous stop: the last
+            // confirmed apply, or the plan's current stop if none.
+            if let previous = lastApplied {
+                slider.doubleValue = Double(previous)
+                label.stringValue = plan.hiDPI[previous].label
+            } else if let current = plan.current {
+                label.stringValue = current.label
+                if let nearest = Self.nearestStopIndex(to: current, in: plan.hiDPI) {
+                    slider.doubleValue = Double(nearest)
+                }
+            }
+        }
+    }
+
+    /// Position of the HiDPI stop closest to `mode` by width — used to park
+    /// the knob when `mode` isn't itself a stop (native or off-plan).
+    private static func nearestStopIndex(to mode: ModeSpec, in hiDPI: [ModeSpec]) -> Int? {
+        hiDPI.indices.min { abs(hiDPI[$0].width - mode.width) < abs(hiDPI[$1].width - mode.width) }
     }
 }
 
