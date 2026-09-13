@@ -75,10 +75,11 @@ public final class DDCService {
                 Log.ddc.debug("bad reply for \(code.rawValue, format: .hex) attempt \(attempt)")
             } catch let e as DDCError {
                 last = e
-                Log.ddc.debug("i/o error \(String(describing: e)) attempt \(attempt)")
+                Log.ddc.debug("i/o error \(String(describing: e), privacy: .public) attempt \(attempt)")
                 sleep(Self.settleMicroseconds)
             } catch {
                 last = .io(-1)
+                sleep(Self.settleMicroseconds)
             }
         }
         return .failure(last)
@@ -88,8 +89,10 @@ public final class DDCService {
         do {
             try transport.write(VCP.writeRequest(code, value: value))
         } catch let e as DDCError {
+            sleep(Self.settleMicroseconds)
             return .failure(e)
         } catch {
+            sleep(Self.settleMicroseconds)
             return .failure(.io(-1))
         }
         sleep(Self.settleMicroseconds)
