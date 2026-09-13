@@ -171,16 +171,20 @@ after a long sleep are the exact class of bug BetterDisplay has.
 ### 4.3 Modes (`DisplayModes.swift`)
 
 `CGDisplayCopyAllDisplayModes(id, [kCGDisplayShowDuplicateLowResolutionModes: true])`,
-filtered to `isUsableForDesktopGUI()`. Two lists:
+filtered to `isUsableForDesktopGUI()`. The panel's **native mode** is the
+non-HiDPI mode with the largest pixel area (3840×1600 on the Dell). Modes whose
+aspect ratio differs from the native one by more than 1 % (the letterboxed
+800×600, 960×540, 1280×540, 1280×720, 2560×1080, 2560×1440 entries) are
+excluded everywhere — nobody wants them from a slider. Two lists:
 
 - **HiDPI stops** (slider): modes with `pixelWidth == 2 * width`, one per
   `(width, height)`, preferring the refresh rate equal to the current mode's,
-  else the highest. Ordered by width ascending. For the Dell today: 1280, 1504,
-  1600, 1680, 1920, 2048, 2304, 2560, 3008, 3200, 3360 wide.
-- **All modes** (picker submenu): HiDPI stops, a separator, then low-resolution
-  modes (`pixelWidth == width`) with the same dedup, each labelled
-  `W×H` (+ ` (native)` when `pixelWidth == CGDisplayPixelsWide` of the panel's
-  native mode, + ` HiDPI` in the low-res section header instead of per row).
+  else the highest. Ordered by width ascending. For the Dell today, 11 stops:
+  1280, 1504, 1600, 1680, 1920, 2048, 2304, 2560, 3008, 3200, 3360 wide.
+- **All modes** (picker submenu): a `HiDPI` header, the stops, a separator, a
+  `Low resolution` header, then the same-aspect low-resolution modes
+  (`pixelWidth == width`), deduped the same way. Rows are labelled `W×H`; the
+  native mode's row ends in ` (native)`.
 
 Apply with `CGBeginDisplayConfiguration` / `CGConfigureDisplayWithDisplayMode` /
 `CGCompleteDisplayConfiguration(.forSession)`; `.forSession` because macOS
@@ -256,14 +260,14 @@ Quit
   otherwise nothing). External blocks: brightness + contrast (DDC), resolution,
   Night Shift status. Built-in block: brightness only.
 - Sliders are `NSSlider`s inside `NSMenuItem.view`s (KeyLight's
-  `BrightnessSliderView` pattern, explicit frames). Brightness/contrast are 0…100
-  integers; drags coalesce to at most 10 writes/s and the trailing value is
+  `BrightnessSliderView` pattern, explicit frames). Brightness/contrast run 0…max as the
+  monitor reports it (100 on the Dell); drags coalesce to at most 10 writes/s and the trailing value is
   always sent. The label to the right shows the value the monitor last
   confirmed, updated from the read that follows each write.
 - Values are read asynchronously when the menu opens; until the first read
   returns, the slider shows the last cached value greyed, or a "–" label if
   there is none.
-- **Resolution slider** has one tick per HiDPI stop, snaps, and applies on
+- **Resolution slider** has one tick per HiDPI stop (11 on the Dell), snaps, and applies on
   mouse-up only. The label is the "looks like" size. The `▸` opens the picker
   submenu (§4.3) with the current mode checked.
 - A display whose DDC is unavailable shows one row, "No DDC control", instead
