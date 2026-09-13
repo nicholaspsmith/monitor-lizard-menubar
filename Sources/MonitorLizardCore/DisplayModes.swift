@@ -79,13 +79,42 @@ public enum DisplayModes {
         return (all, current, modes)
     }
 
-    public static func apply(_ spec: ModeSpec, modes: [CGDisplayMode], to id: CGDirectDisplayID) -> CGError {
-        guard modes.indices.contains(spec.index) else { return .illegalArgument }
+    /// Checks that `spec.index` still points at the mode it was derived from,
+    /// rather than trusting a caller who may be replaying a spec against a
+    /// mode list refreshed since. `.rangeCheck` for an out-of-bounds index,
+    /// `.illegalArgument` when the index is in range but names a different mode.
+    public static func validate(_ spec: ModeSpec, against all: [ModeSpec]) -> CGError {
+        guard all.indices.contains(spec.index) else { return .rangeCheck }
+        let mode = all[spec.index]
+        guard mode.width == spec.width, mode.height == spec.height,
+              mode.pixelWidth == spec.pixelWidth, mode.refresh == spec.refresh else {
+            return .illegalArgument
+        }
+        return .success
+    }
+
+    public static func apply(_ spec: ModeSpec, all: [ModeSpec], modes: [CGDisplayMode], to id: CGDirectDisplayID) -> CGError {
+        let validation = validate(spec, against: all)
+        guard validation == .success else {
+            Log.modes.error("display \(id) → \(spec.label) @\(spec.refresh) failed validation rc=\(validation.rawValue)")
+            return validation
+        }
+        guard modes.indices.contains(spec.index) else {
+            Log.modes.error("display \(id) → \(spec.label) @\(spec.refresh) index \(spec.index) out of range for modes rc=\(CGError.rangeCheck.rawValue)")
+            return .rangeCheck
+        }
         var config: CGDisplayConfigRef?
         var err = CGBeginDisplayConfiguration(&config)
-        guard err == .success, let config else { return err }
+        guard err == .success, let config else {
+            Log.modes.error("display \(id) → \(spec.label) @\(spec.refresh) CGBeginDisplayConfiguration failed rc=\(err.rawValue)")
+            return err
+        }
         err = CGConfigureDisplayWithDisplayMode(config, id, modes[spec.index], nil)
-        guard err == .success else { CGCancelDisplayConfiguration(config); return err }
+        guard err == .success else {
+            CGCancelDisplayConfiguration(config)
+            Log.modes.error("display \(id) → \(spec.label) @\(spec.refresh) CGConfigureDisplayWithDisplayMode failed rc=\(err.rawValue)")
+            return err
+        }
         err = CGCompleteDisplayConfiguration(config, .forSession)
         Log.modes.info("display \(id) → \(spec.label) @\(spec.refresh) HiDPI=\(spec.isHiDPI) rc=\(err.rawValue)")
         return err
