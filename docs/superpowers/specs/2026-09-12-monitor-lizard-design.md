@@ -358,17 +358,39 @@ Manual verification before the app is called done:
 - README: mascot, what it does, the DDC/Night Shift explanation in two
   paragraphs, "Why not a SwiftBar plugin?", install, verify.
 
-## 8. Rollout (each step approved separately, after §6 passes)
+## 8. Rollout
 
-1. Quit BetterDisplay, uninstall it (app + `pro.betterdisplay.BetterDisplay`
-   prefs to the Trash; keep the override files — they are the Night Shift fix).
-2. `launchctl bootout gui/$UID/com.nicholassmith.bdcolorguard`, remove the
-   plist, retire `~/Code/betterdisplay-color-guard` (README note, archived).
-3. Delete `~/.local/bin/fixcolors` and `~/.local/bin/dell-display-fix`
-   (the latter manages P2722H virtual screens that no longer exist).
+Nothing irreversible happens until Monitor Lizard has run as the only display
+controller for a full week with no problems reported by Nick.
+
+**Phase 1 — soak (reversible; starts once §6 passes):**
+
+1. Quit BetterDisplay and turn off its start-at-login. Do not uninstall it.
+   Two apps on the same DDC bus and two wake-time re-appliers would make any
+   fault impossible to attribute.
+2. Unload the colour guard without deleting it:
+   `launchctl bootout gui/$UID/com.nicholassmith.bdcolorguard`. Its only job
+   is undoing BetterDisplay's wake bug, so with BetterDisplay quit it must stay
+   idle for the soak to prove anything.
+3. Monitor Lizard starts at login. Nick uses the machine normally for **7 days**
+   — including lid-closed sleeps, replugging the Dell, and resolution changes —
+   and reports any problem. Any report resets the clock after the fix.
+   Rollback at any point: `launchctl bootstrap` the guard, reopen BetterDisplay.
+
+**Phase 2 — decommission (after the week, each step approved separately):**
+
+1. Uninstall BetterDisplay: app and `pro.betterdisplay.BetterDisplay` prefs to
+   the Trash. Keep the override files — they are the Night Shift fix.
+2. Remove `betterdisplay-color-guard` for good: delete
+   `~/Library/LaunchAgents/com.nicholassmith.bdcolorguard.plist`, delete
+   `~/.local/bin/fixcolors`, and archive `~/Code/betterdisplay-color-guard`
+   (README note: superseded by Monitor Lizard, repo kept for the investigation
+   write-up).
+3. Delete `~/.local/bin/dell-display-fix` (manages P2722H virtual screens that
+   no longer exist).
 4. Update the global CLAUDE.md StatusItemKit app list and Barn notes (the
-   BetterDisplay status-item special cases become moot); update memory files
-   that reference BetterDisplay.
+   BetterDisplay status-item special cases become moot); update the memory
+   files that reference BetterDisplay and the colour guard.
 
 ## 9. Open items to verify during implementation (not design decisions)
 
