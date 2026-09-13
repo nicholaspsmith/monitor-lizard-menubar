@@ -6,9 +6,11 @@ final class FakeTransport: DDCTransport {
     var writes: [[UInt8]] = []
     var replies: [[UInt8]] = []          // consumed in order by read(count:)
     var writeError: Int32?               // if set, every write throws
+    var onWrite: (([UInt8]) -> Void)?    // invoked after recording, to script races
     func write(_ bytes: [UInt8]) throws {
         if let e = writeError { throw DDCError.io(e) }
         writes.append(bytes)
+        onWrite?(bytes)
     }
     func read(count: Int) throws -> [UInt8] {
         guard !replies.isEmpty else { throw DDCError.io(-1) }
@@ -106,5 +108,51 @@ final class DDCServiceTests: XCTestCase {
             if case .failure(.io(-536870201)) = result { done.fulfill() } else { XCTFail("\(result)") }
         }
         wait(for: [done], timeout: 1)
+    }
+
+    func testWriteFailurePathSleepsBeforeReturning() {
+        // The ≥50ms-between-transactions constraint must hold even when the
+        // write itself fails, not just on the happy path.
+        let t = FakeTransport(); t.writeError = -536870201
+        var sleeps: [UInt32] = []
+        let q = DispatchQueue(label: "test.ddc")
+        let s = DDCService(transport: t, sleep: { sleeps.append($0) }, queue: q)
+        let done = expectation(description: "write failure")
+        s.write(.brightness, value: 5) { result in
+            if case .failure(.io(-536870201)) = result { done.fulfill() } else { XCTFail("\(result)") }
+        }
+        wait(for: [done], timeout: 1)
+        XCTAssertFalse(sleeps.isEmpty)
+        XCTAssertTrue(sleeps.allSatisfy { $0 >= DDCService.settleMicroseconds })
+    }
+
+    func testWriteArrivingMidTransactionGetsItsOwnTransaction() {
+        // A write that lands after `pending` was popped (i.e. while writeNow
+        // is already talking to the bus) must not be lost or merged into the
+        // in-flight transaction: it gets queued as its own transaction.
+        let t = FakeTransport()
+        t.replies = [Self.goodBrightness, Self.goodBrightness]
+        let q = DispatchQueue(label: "test.ddc")
+        let s = DDCService(transport: t, sleep: { _ in }, queue: q)
+        let firstDone = expectation(description: "first write")
+        let secondDone = expectation(description: "second write")
+        var triggered = false
+        t.onWrite = { bytes in
+            guard bytes.first == 0x84, !triggered else { return }
+            triggered = true
+            s.write(.brightness, value: 7) { result in
+                XCTAssertEqual(try? result.get(), VCPValue(current: 99, maximum: 100))
+                secondDone.fulfill()
+            }
+        }
+        s.write(.brightness, value: 3) { result in
+            XCTAssertEqual(try? result.get(), VCPValue(current: 99, maximum: 100))
+            firstDone.fulfill()
+        }
+        wait(for: [firstDone, secondDone], timeout: 1)
+        let sentWrites = t.writes.filter { $0[0] == 0x84 }
+        XCTAssertEqual(sentWrites.count, 2, "the mid-transaction arrival gets its own transaction")
+        XCTAssertEqual(sentWrites[0][4], 3)
+        XCTAssertEqual(sentWrites[1][4], 7)
     }
 }
