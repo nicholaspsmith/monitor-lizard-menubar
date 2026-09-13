@@ -54,7 +54,7 @@ final class App: NSObject, NSApplicationDelegate {
         let fraction = model.mainBrightnessFraction
         let icon: NSImage
         if appearance.style == .character {
-            let ns = model.nightShift?.status().active ?? false
+            let ns = model.nightShift?.status().enabled ?? false
             icon = CharacterIcon.monitorLizard(brightness: fraction, nightShift: ns, tongue: Date() < tongueUntil)
         } else {
             icon = appearance.image(fraction: fraction)
@@ -97,7 +97,7 @@ final class App: NSObject, NSApplicationDelegate {
         if let ns = model.nightShift, ns.isAvailable {
             let s = ns.status()
             let toggle = actionItem("Night Shift", #selector(toggleNightShift))
-            toggle.state = s.active ? .on : .off
+            toggle.state = s.enabled ? .on : .off
             menu.addItem(toggle)
             let warmth = NSMenuItem()
             warmth.view = SliderRow(title: "Warmth", symbol: "thermometer.sun", value: Double(s.strength) * 100, maximum: 100,
@@ -157,7 +157,7 @@ final class App: NSObject, NSApplicationDelegate {
 
     @objc private func toggleNightShift() {
         guard let ns = model.nightShift else { return }
-        _ = ns.setEnabled(!ns.status().active)
+        _ = ns.setEnabled(!ns.status().enabled)
         refreshIcon()
     }
 
