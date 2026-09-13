@@ -18,6 +18,9 @@ final class IORegistryScannerTests: XCTestCase {
         var ids = [CGDirectDisplayID](repeating: 0, count: Int(displayCount))
         CGGetOnlineDisplayList(displayCount, &ids, &displayCount)
         let displays = ids.map { CoreDisplayInfo.info(for: $0) }
+        guard displays.contains(where: { !$0.isBuiltIn }) else {
+            throw XCTSkip("no external display online")
+        }
         XCTAssertEqual(IORegistryScanner.makeDDCServices(for: displays).count, 1)
     }
 }

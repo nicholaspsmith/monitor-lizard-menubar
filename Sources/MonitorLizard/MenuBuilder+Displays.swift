@@ -51,9 +51,10 @@ extension App {
 
         let res = NSMenuItem()
         res.view = ResolutionRow(plan: entry.plan) { [weak self] spec in
-            guard let self else { return }
+            guard let self else { return .failure }
             let rc = self.model.apply(spec, to: entry.info.id)
             if rc != .success { Log.modes.error("apply failed rc=\(rc.rawValue)") }
+            return rc
         }
         res.submenu = ResolutionMenu.make(plan: entry.plan, displayID: entry.info.id, target: self, action: #selector(pickMode(_:)))
         menu.addItem(res)
