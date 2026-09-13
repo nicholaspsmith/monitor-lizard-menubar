@@ -2,6 +2,12 @@ import Foundation
 
 public struct NightShiftStatus: Equatable {
     public let available: Bool
+    /// Whether Night Shift is engaged right now — what Control Center shows.
+    /// Key all UI off this field, never off `active`: empirically on this
+    /// Mac, `active == true` while Night Shift is OFF
+    /// (`corebrightnessdiag` shows `BlueLightReductionFactor = 0`,
+    /// `mode = 0`), so `enabled` is the real engagement flag (as Shifty and
+    /// the `nightlight` CLI use it).
     public let enabled: Bool
     public let active: Bool
     public let strength: Float
@@ -50,6 +56,19 @@ public final class CoreBrightnessNightShift: NightShiftBackend {
         guard dlopen("/System/Library/PrivateFrameworks/CoreBrightness.framework/CoreBrightness", RTLD_NOW) != nil,
               let cls = NSClassFromString("CBBlueLightClient") as? NSObject.Type else { return nil }
         let object = cls.init()
+        let requiredSelectors: [(name: String, selector: Selector)] = [
+            ("setEnabled:", #selector(BlueLightClient.setEnabled(_:))),
+            ("setStrength:commit:", #selector(BlueLightClient.setStrength(_:commit:))),
+            ("getStrength:", #selector(BlueLightClient.getStrength(_:))),
+            ("getBlueLightStatus:", #selector(BlueLightClient.getBlueLightStatus(_:))),
+            ("setStatusNotificationBlock:", #selector(BlueLightClient.setStatusNotificationBlock(_:))),
+        ]
+        for (name, selector) in requiredSelectors {
+            guard object.responds(to: selector) else {
+                Log.nightshift.error("CBBlueLightClient does not respond to \(name, privacy: .public); Night Shift disabled")
+                return nil
+            }
+        }
         client = unsafeBitCast(object, to: BlueLightClient.self)
         client.setStatusNotificationBlock { [weak self] in
             DispatchQueue.main.async { self?.handlers.forEach { $0() } }
