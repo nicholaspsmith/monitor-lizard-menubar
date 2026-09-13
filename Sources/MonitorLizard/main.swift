@@ -28,9 +28,10 @@ final class App: NSObject, NSApplicationDelegate {
             self?.refreshIcon()
         }
         status = StatusItemController(
-            pollInterval: 30,
+            pollInterval: 60,
             onPoll: { [weak self] in
-                // Built-in brightness and Night Shift are cheap to read; DDC is not polled.
+                // Brightness and Night Shift both push change notifications; this
+                // tick is only a safety net if one is missed. DDC is never polled.
                 self?.model.readBuiltInOnly()
                 self?.refreshIcon()
             },
