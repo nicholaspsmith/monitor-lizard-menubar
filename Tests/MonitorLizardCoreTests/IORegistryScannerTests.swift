@@ -1,4 +1,6 @@
 import XCTest
+import IOKit
+import CoreGraphics
 @testable import MonitorLizardCore
 
 final class IORegistryScannerTests: XCTestCase {
@@ -7,5 +9,15 @@ final class IORegistryScannerTests: XCTestCase {
         XCTAssertTrue(fbs.contains { $0.name.hasPrefix("disp") }, "no framebuffers found: \(fbs)")
         let services = IORegistryScanner.externalAVServices()
         for s in services { XCTAssertNotNil(DisplayMatcher.framebufferName(inAVServicePath: s.path), s.path) }
+        for s in services { IOObjectRelease(s.entry) }
+    }
+
+    func testMakeDDCServicesFindsTheOneExternalDisplayOnThisMac() throws {
+        var displayCount: UInt32 = 0
+        CGGetOnlineDisplayList(0, nil, &displayCount)
+        var ids = [CGDirectDisplayID](repeating: 0, count: Int(displayCount))
+        CGGetOnlineDisplayList(displayCount, &ids, &displayCount)
+        let displays = ids.map { CoreDisplayInfo.info(for: $0) }
+        XCTAssertEqual(IORegistryScanner.makeDDCServices(for: displays).count, 1)
     }
 }

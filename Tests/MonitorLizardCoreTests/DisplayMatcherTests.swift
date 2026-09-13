@@ -17,9 +17,9 @@ final class DisplayMatcherTests: XCTestCase {
         let tv = DisplayInfo(id: 7, name: "65S455", vendorID: 20588, productID: 38483, serial: 0, isBuiltIn: false, isMain: false, isTV: true, isHDMI: true)
         let builtIn = DisplayInfo(id: 1, name: "Color LCD", vendorID: 1552, productID: 41055, serial: 4251086178, isBuiltIn: true, isMain: false, isTV: false, isHDMI: false)
         let fbs = [
-            FramebufferEntry(name: "dispext0", productID: 41200, serial: 825640780, entry: 10),
-            FramebufferEntry(name: "dispext1", productID: 38483, serial: 0, entry: 11),
-            FramebufferEntry(name: "disp0", productID: nil, serial: nil, entry: 12),
+            FramebufferEntry(name: "dispext0", productID: 41200, serial: 825640780),
+            FramebufferEntry(name: "dispext1", productID: 38483, serial: 0),
+            FramebufferEntry(name: "disp0", productID: nil, serial: nil),
         ]
         let services = [
             AVServiceEntry(path: "…/dispext1:dcpav-service-epic:0/DCPAVServiceProxy", entry: 21),
@@ -34,7 +34,7 @@ final class DisplayMatcherTests: XCTestCase {
     func testSingleExternalFallbackWhenAttributesAreMissing() {
         // Some framebuffers publish no ProductAttributes (seen on this Mac for idle dispext slots).
         let dell = DisplayInfo(id: 5, name: "DELL U3818DW", vendorID: 4268, productID: 41200, serial: 825640780, isBuiltIn: false, isMain: true, isTV: false, isHDMI: true)
-        let fbs = [FramebufferEntry(name: "dispext0", productID: nil, serial: nil, entry: 10)]
+        let fbs = [FramebufferEntry(name: "dispext0", productID: nil, serial: nil)]
         let services = [AVServiceEntry(path: Self.dellPath, entry: 20)]
         XCTAssertEqual(DisplayMatcher.match(displays: [dell], framebuffers: fbs, services: services)[5]?.entry, 20)
     }
@@ -42,7 +42,7 @@ final class DisplayMatcherTests: XCTestCase {
     func testNoFallbackWithTwoExternals() {
         let a = DisplayInfo(id: 5, name: "A", vendorID: 1, productID: 1, serial: 1, isBuiltIn: false, isMain: true, isTV: false, isHDMI: true)
         let b = DisplayInfo(id: 6, name: "B", vendorID: 2, productID: 2, serial: 2, isBuiltIn: false, isMain: false, isTV: false, isHDMI: true)
-        let fbs = [FramebufferEntry(name: "dispext0", productID: nil, serial: nil, entry: 10)]
+        let fbs = [FramebufferEntry(name: "dispext0", productID: nil, serial: nil)]
         let services = [AVServiceEntry(path: Self.dellPath, entry: 20)]
         XCTAssertTrue(DisplayMatcher.match(displays: [a, b], framebuffers: fbs, services: services).isEmpty)
     }
