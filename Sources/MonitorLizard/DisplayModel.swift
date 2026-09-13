@@ -79,6 +79,11 @@ final class DisplayModel {
                          modes: modes,
                          tvState: tvRoles.state(for: info))
         }
+        for e in entries where e.info.isBuiltIn {
+            // Keyboard keys and Control Center change the panel behind our back;
+            // DisplayServices tells us, so the glyph follows without polling.
+            brightness.observeChanges(e.info.id) { [weak self] in self?.readBuiltInOnly() }
+        }
         Log.menu.info("enumerated \(self.entries.count) displays, \(services.count) with DDC")
         onChange?()
         for e in entries where tvRoles.needsFix(e.info) { onNeedsTVFix?(e.info) }
