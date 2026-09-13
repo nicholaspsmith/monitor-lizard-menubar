@@ -36,9 +36,12 @@ final class App: NSObject, NSApplicationDelegate {
             },
             onBuildMenu: { [weak self] menu in self?.buildMenu(menu) }
         )
+        status.onMenuDidClose = { [weak self] in self?.refreshIcon() }
         model.onChange = { [weak self] in self?.modelChanged() }
         model.onWrite = { [weak self] in self?.flickTongue() }
-        model.onNeedsTVFix = { [weak self] info in self?.fixTVRole(info) }
+        // Dispatched async so the admin dialog in `fixTVRole` never runs from
+        // inside `DisplayModel.refresh()`'s own enumeration loop.
+        model.onNeedsTVFix = { [weak self] info in DispatchQueue.main.async { self?.fixTVRole(info) } }
         model.start()
         status.start()
         yieldClient = YieldClient(item: status)
@@ -77,7 +80,8 @@ final class App: NSObject, NSApplicationDelegate {
     // MARK: - Menu
 
     private func buildMenu(_ menu: NSMenu) {
-        menu.removeAllItems()
+        // StatusItemController.menuNeedsUpdate already clears the menu before
+        // calling onBuildMenu.
         sliderRows = [:]
         model.readValues()
 
@@ -128,8 +132,11 @@ final class App: NSObject, NSApplicationDelegate {
 
     func fixTVRole(_ info: DisplayInfo) {
         guard !fixInProgress, model.tvRoles.needsFix(info) else { return }
+        // Held through the trailing async refresh (reset there, not via
+        // `defer`), so a second blocked display's queued fix waits until this
+        // one has fully settled rather than firing while the admin dialog for
+        // this one is still up — it gets picked up by that refresh instead.
         fixInProgress = true
-        defer { fixInProgress = false }
         switch OverrideWriter.write(for: info) {
         case .written:
             notifier.post(title: "Marked \(info.name) as a monitor",
@@ -140,7 +147,10 @@ final class App: NSObject, NSApplicationDelegate {
             notifier.post(title: "Couldn't mark \(info.name) as a monitor", body: message)
             model.tvRoles.markSkipped(info)
         }
-        model.refresh()
+        DispatchQueue.main.async { [weak self] in
+            self?.model.refresh()
+            self?.fixInProgress = false
+        }
     }
 
     // MARK: - Selectors
