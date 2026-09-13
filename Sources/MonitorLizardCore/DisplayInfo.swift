@@ -24,8 +24,9 @@ public struct DisplayInfo: Equatable, Identifiable {
     /// plain string on some virtual displays, and absent on the built-in panel.
     public static func from(dictionary d: [String: Any], id: CGDirectDisplayID, isBuiltIn: Bool, isMain: Bool) -> DisplayInfo {
         let name: String
-        if let names = d["DisplayProductName"] as? [String: String], let first = names.values.sorted().first {
-            name = first
+        if let names = d["DisplayProductName"] as? [String: String] {
+            name = names["en_US"] ?? names[Locale.current.identifier] ?? names.values.sorted().first
+                ?? (isBuiltIn ? "Built-in Display" : "Display \(id)")
         } else if let plain = d["DisplayProductName"] as? String {
             name = plain
         } else {
