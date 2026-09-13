@@ -104,9 +104,15 @@ final class DisplayModel {
 
     /// The poll tick: built-in brightness only. DDC is never read on a timer.
     func readBuiltInOnly() {
+        var changed = false
         for (i, e) in entries.enumerated() where e.info.isBuiltIn {
-            entries[i].builtInBrightness = brightness.brightness(e.info.id)
+            let value = brightness.brightness(e.info.id)
+            if value != entries[i].builtInBrightness {
+                entries[i].builtInBrightness = value
+                changed = true
+            }
         }
+        if changed { onChange?() }
     }
 
     private func store(id: CGDirectDisplayID, code: VCPCode, result: Result<VCPValue, DDCError>) {
@@ -127,9 +133,21 @@ final class DisplayModel {
     private func write(_ id: CGDirectDisplayID, _ code: VCPCode, _ value: UInt16) {
         guard let entry = entry(id), let ddc = entry.ddc else { return }
         ddc.write(code, value: value) { [weak self] result in
-            DispatchQueue.main.async {
-                self?.store(id: id, code: code, result: result)
-                if case .success = result { self?.onWrite?() }
+            switch result {
+            case .success:
+                DispatchQueue.main.async {
+                    self?.store(id: id, code: code, result: result)
+                    self?.onWrite?()
+                }
+            case .failure(let error):
+                // A failed write says nothing about whether the display is
+                // still readable — only a read failure may legitimately mark
+                // it unavailable — so re-read instead of storing the write's
+                // own failure through `store`.
+                Log.ddc.error("display \(id) \(code.rawValue, format: .hex) write failed: \(String(describing: error))")
+                ddc.read(code) { [weak self] readResult in
+                    DispatchQueue.main.async { self?.store(id: id, code: code, result: readResult) }
+                }
             }
         }
     }
