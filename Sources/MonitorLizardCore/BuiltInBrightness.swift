@@ -36,6 +36,12 @@ public final class DisplayServicesBrightness: BrightnessBackend {
 
     public var isAvailable: Bool { getFn != nil && setFn != nil }
 
+    /// Clamp a raw value into the valid 0...1 brightness/strength range. A
+    /// pure, tiny seam so the clamping logic — shared with
+    /// `CoreBrightnessNightShift` — is unit-testable even though the private
+    /// functions it guards are not.
+    public static func clamp(_ value: Float) -> Float { max(0, min(1, value)) }
+
     public func canChange(_ id: CGDirectDisplayID) -> Bool { canChangeFn?(id) ?? false }
 
     public func brightness(_ id: CGDirectDisplayID) -> Float? {
@@ -45,8 +51,9 @@ public final class DisplayServicesBrightness: BrightnessBackend {
     }
 
     public func setBrightness(_ id: CGDirectDisplayID, _ value: Float) -> Bool {
-        guard let setFn, setFn(id, max(0, min(1, value))) == 0 else { return false }
-        changedFn?(id, Double(value))
+        let clamped = Self.clamp(value)
+        guard let setFn, setFn(id, clamped) == 0 else { return false }
+        changedFn?(id, Double(clamped))
         return true
     }
 }
