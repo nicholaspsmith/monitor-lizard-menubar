@@ -61,6 +61,11 @@ final class DisplayMatcherTests: XCTestCase {
         XCTAssertTrue(info.isHDMI)
     }
 
+    func testDisplayInfoNamePrefersEnUSOverAlphabeticalOrder() {
+        let dict: [String: Any] = ["DisplayProductName": ["de_DE": "Anzeige", "en_US": "DELL U3818DW"]]
+        XCTAssertEqual(DisplayInfo.from(dictionary: dict, id: 5, isBuiltIn: false, isMain: true).name, "DELL U3818DW")
+    }
+
     func testDisplayInfoNameFallsBackToPlainStringAndGeneric() {
         XCTAssertEqual(DisplayInfo.from(dictionary: ["DisplayProductName": "X"], id: 1, isBuiltIn: false, isMain: false).name, "X")
         XCTAssertEqual(DisplayInfo.from(dictionary: [:], id: 1, isBuiltIn: true, isMain: false).name, "Built-in Display")
