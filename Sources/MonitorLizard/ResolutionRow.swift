@@ -37,7 +37,13 @@ final class ResolutionRow: NSView {
         if let current = plan.current, let i = plan.stopIndex(of: current) {
             slider.doubleValue = Double(i); lastApplied = i; label.stringValue = plan.hiDPI[i].label
         } else if let current = plan.current {
-            label.stringValue = current.label + (current.isHiDPI ? "" : " (low-res)")
+            // Not a HiDPI stop (native or a stale/off-plan mode): show the
+            // real label, park the knob at the nearest stop by width, and
+            // leave `lastApplied` nil so picking that stop still applies it.
+            label.stringValue = current.label
+            if let nearest = plan.hiDPI.indices.min(by: { abs(plan.hiDPI[$0].width - current.width) < abs(plan.hiDPI[$1].width - current.width) }) {
+                slider.doubleValue = Double(nearest)
+            }
         }
 
         for v in [title, icon, slider, label] { v.translatesAutoresizingMaskIntoConstraints = false; addSubview(v) }
@@ -63,9 +69,13 @@ final class ResolutionRow: NSView {
         let i = Int(sender.doubleValue.rounded())
         guard plan.hiDPI.indices.contains(i) else { return }
         label.stringValue = plan.hiDPI[i].label
-        // NSSlider with isContinuous fires during the drag; the release is the
-        // event whose type is .leftMouseUp.
-        guard NSApp.currentEvent?.type == .leftMouseUp, i != lastApplied else { return }
+        // NSSlider with isContinuous fires on every tick of a mouse drag, so
+        // gate on "not an in-progress drag" rather than only `.leftMouseUp` —
+        // that also lets a mouse release, a keyboard nudge (arrow keys) and an
+        // accessibility value set apply, none of which are `.leftMouseUp`.
+        let type = NSApp.currentEvent?.type
+        let dragging = type == .leftMouseDragged || type == .leftMouseDown
+        guard !dragging, i != lastApplied else { return }
         lastApplied = i
         onApply(plan.hiDPI[i])
     }
@@ -87,7 +97,9 @@ enum ResolutionMenu {
             menu.addItem(header)
             for mode in modes {
                 var text = mode.label
-                if mode == plan.native { text += " (native)" }
+                if let native = plan.native, mode.width == native.width, mode.height == native.height, !mode.isHiDPI {
+                    text += " (native)"
+                }
                 let item = NSMenuItem(title: text, action: action, keyEquivalent: "")
                 item.target = target
                 item.tag = Int(displayID)
