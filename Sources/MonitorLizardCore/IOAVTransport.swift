@@ -33,16 +33,28 @@ public final class IOAVTransport: DDCTransport {
     }
 
     public func write(_ bytes: [UInt8]) throws {
-        guard let write = IOAVSymbols.write else { throw DDCError.unavailable }
-        let rc = bytes.withUnsafeBytes { write(service, VCP.chipAddress, VCP.sourceAddress, $0.baseAddress!, UInt32(bytes.count)) }
-        if rc != KERN_SUCCESS { throw DDCError.io(rc) }
+        try Self.validate(byteCount: bytes.count)
+        guard let writeFn = IOAVSymbols.write else { throw DDCError.unavailable }
+        let rc = bytes.withUnsafeBytes { buffer in
+            guard let base = buffer.baseAddress else { return kIOReturnBadArgument }
+            return writeFn(service, VCP.chipAddress, VCP.sourceAddress, base, UInt32(bytes.count))
+        }
+        if rc != kIOReturnSuccess { throw DDCError.io(rc) }
     }
 
     public func read(count: Int) throws -> [UInt8] {
-        guard let read = IOAVSymbols.read else { throw DDCError.unavailable }
+        try Self.validate(byteCount: count)
+        guard let readFn = IOAVSymbols.read else { throw DDCError.unavailable }
         var buffer = [UInt8](repeating: 0, count: count)
-        let rc = buffer.withUnsafeMutableBytes { read(service, VCP.chipAddress, VCP.sourceAddress, $0.baseAddress!, UInt32(count)) }
-        if rc != KERN_SUCCESS { throw DDCError.io(rc) }
+        let rc = buffer.withUnsafeMutableBytes { mutableBuffer in
+            guard let base = mutableBuffer.baseAddress else { return kIOReturnBadArgument }
+            return readFn(service, VCP.chipAddress, VCP.sourceAddress, base, UInt32(count))
+        }
+        if rc != kIOReturnSuccess { throw DDCError.io(rc) }
         return buffer
+    }
+
+    static func validate(byteCount: Int) throws {
+        guard byteCount > 0 else { throw DDCError.io(kIOReturnBadArgument) }
     }
 }
