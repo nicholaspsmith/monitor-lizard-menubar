@@ -36,12 +36,14 @@ running for the fix to hold.
 
 ## The icon
 
-<p align="center"><img src="docs/menubar-icon.png" alt="The menu-bar icon in four states: dim screen, bright screen, amber Night Shift screen, and the tongue flick"></p>
+<p align="center"><img src="docs/menubar-icon.png" alt="The menu-bar icon in four states: dim blue screen, bright blue screen, amber Night Shift screen, and the tongue flick"></p>
 
-A lizard on top of a monitor. The screen fills up with your main display's
-brightness, turns amber while Night Shift is on, and the lizard flicks its
-tongue when a slider change lands on the monitor. Prefer a plain meter?
-**menu ▸ Icon** offers Arc, Gauge, Pie or Wedge instead.
+The mascot, shrunk to the menu bar: a gecko hugging the monitor, head
+peering over the top corner, paws on the bezel, tail curling up over the
+screen. The screen fills with blue as your main display gets brighter, turns
+amber while Night Shift is on, and the gecko flicks its tongue when a slider
+change lands on the monitor. Prefer a plain meter? **menu ▸ Icon** offers
+Arc, Gauge, Pie or Wedge instead.
 
 ## Install
 
