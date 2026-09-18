@@ -83,3 +83,21 @@ public final class DisplayServicesBrightness: BrightnessBackend {
         if rc != 0 { Log.menu.error("brightness change registration for display \(id) failed rc=\(rc)") }
     }
 }
+
+/// Which backend drives a display's Brightness row.
+public enum BrightnessSource: Equatable {
+    case ddc      // the monitor's own backlight over DDC/CI
+    case system   // DisplayServices — the built-in panel, or an external display macOS dims itself
+    case none
+
+    /// DDC wins while the monitor answers it: that is the backlight itself,
+    /// and `systemCanChange` says nothing about *how* macOS would dim the
+    /// display. Once a read has failed (a TV over HDMI, typically) the
+    /// display falls back to DisplayServices if macOS can drive it — the same
+    /// route the keyboard brightness keys take.
+    public static func pick(isBuiltIn: Bool, hasDDC: Bool, ddcUnavailable: Bool, systemCanChange: Bool) -> BrightnessSource {
+        if isBuiltIn { return .system }
+        if hasDDC && !ddcUnavailable { return .ddc }
+        return systemCanChange ? .system : .none
+    }
+}

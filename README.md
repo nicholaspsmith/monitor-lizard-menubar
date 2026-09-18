@@ -15,7 +15,7 @@ One section per display, then Night Shift for the whole Mac:
 
 | Row | What it does |
 |-----|--------------|
-| **Brightness** | Sets the monitor's own backlight over DDC/CI, like pressing its front buttons. Also works for the built-in screen. |
+| **Brightness** | Sets the monitor's own backlight over DDC/CI, like pressing its front buttons. Also works for the built-in screen, and for displays macOS dims itself (TVs over HDMI, Apple and some USB-C monitors — the ones the keyboard brightness keys already work on). |
 | **Contrast** | Same, for contrast. |
 | **Resolution** | Drag through the sharp HiDPI "looks like" sizes. The `▸` submenu lists every mode. |
 | **Night Shift** | Toggle it, and set the warmth. |
@@ -67,7 +67,9 @@ talking to one monitor at the same time interfere with each other.
 - **Brightness and contrast** go over DDC/CI through `IOAVService`, the private
   IOKit interface every Apple Silicon DDC tool uses. One serial queue per
   display, every read confirmed by checksum.
-- **Built-in screen brightness** uses DisplayServices.
+- **Built-in screen brightness** uses DisplayServices, as does any external
+  display macOS says it can dim itself (`DisplayServicesCanChangeBrightness`)
+  once a DDC read has failed on it. That is the route the keyboard keys take.
 - **Night Shift** uses CoreBrightness.
 - **The "is this a TV?" flag** comes from CoreDisplay, the same source
   `system_profiler` reads.

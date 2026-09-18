@@ -3,7 +3,8 @@ import MonitorLizardCore
 import StatusItemKit
 
 /// Monitor Lizard — external-display control for the menu bar: DDC brightness
-/// and contrast, HiDPI resolution, built-in brightness, and Night Shift with an
+/// and contrast (DisplayServices brightness where macOS drives the display
+/// itself), HiDPI resolution, built-in brightness, and Night Shift with an
 /// automatic fix for displays macOS wrongly calls televisions.
 final class App: NSObject, NSApplicationDelegate {
     private var status: StatusItemController!
@@ -32,7 +33,7 @@ final class App: NSObject, NSApplicationDelegate {
             onPoll: { [weak self] in
                 // Brightness and Night Shift both push change notifications; this
                 // tick is only a safety net if one is missed. DDC is never polled.
-                self?.model.readBuiltInOnly()
+                self?.model.readSystemBrightness()
                 self?.refreshIcon()
             },
             onBuildMenu: { [weak self] menu in self?.buildMenu(menu) }
