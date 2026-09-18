@@ -16,6 +16,9 @@ final class App: NSObject, NSApplicationDelegate {
     private var tongueUntil = Date.distantPast
     /// Open-menu slider rows, so a confirmed read can correct them in place.
     var sliderRows: [CGDirectDisplayID: [VCPCode: SliderRow]] = [:]
+    /// Same, for DisplayServices brightness rows: the keyboard keys and
+    /// Control Center move these while the menu is open.
+    var systemBrightnessRows: [CGDirectDisplayID: SliderRow] = [:]
     private var fixInProgress = false
 
     override init() {
@@ -72,10 +75,12 @@ final class App: NSObject, NSApplicationDelegate {
 
     private func modelChanged() {
         refreshIcon()
-        // Correct any open slider to the value the monitor confirmed.
+        // Correct any open slider to the value the monitor confirmed, or that
+        // DisplayServices reports after a change made elsewhere.
         for entry in model.entries {
             if let v = entry.brightness { sliderRows[entry.info.id]?[.brightness]?.update(value: Double(v.current)) }
             if let v = entry.contrast { sliderRows[entry.info.id]?[.contrast]?.update(value: Double(v.current)) }
+            if let b = entry.systemBrightness { systemBrightnessRows[entry.info.id]?.update(value: Double(b) * 100) }
         }
     }
 
@@ -85,6 +90,7 @@ final class App: NSObject, NSApplicationDelegate {
         // StatusItemController.menuNeedsUpdate already clears the menu before
         // calling onBuildMenu.
         sliderRows = [:]
+        systemBrightnessRows = [:]
         model.readValues()
 
         if model.entries.isEmpty {

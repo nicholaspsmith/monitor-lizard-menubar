@@ -17,11 +17,13 @@ extension App {
             // The built-in panel, or an external display macOS dims itself
             // (the keyboard keys work on it even when DDC doesn't).
             let row = NSMenuItem()
-            row.view = SliderRow(title: "Brightness", symbol: "sun.max", value: entry.systemBrightness.map { Double($0) * 100 }, maximum: 100,
+            let view = SliderRow(title: "Brightness", symbol: "sun.max", value: entry.systemBrightness.map { Double($0) * 100 }, maximum: 100,
                                  format: { "\(Int($0.rounded()))" }) { [weak self] v in
                 self?.model.setSystemBrightness(entry.info.id, Float(v / 100))
                 self?.refreshIcon()
             }
+            row.view = view
+            systemBrightnessRows[entry.info.id] = view
             menu.addItem(row)
         case .ddc:
             let b = NSMenuItem()
