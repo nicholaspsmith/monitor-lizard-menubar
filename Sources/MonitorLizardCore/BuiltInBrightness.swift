@@ -13,8 +13,10 @@ public protocol BrightnessBackend: AnyObject {
 }
 
 /// DisplayServices.framework (private) — what Control Center uses for the
-/// built-in panel. `BrightnessChanged` is posted after a set so Control
-/// Center's own slider follows.
+/// built-in panel. On macOS 14.0–15.5 `BrightnessChanged` is posted after a
+/// set so Control Center's own slider follows; 15.6 removed that symbol and
+/// `SetBrightness` now posts the change notification itself, so the call is
+/// resolved optionally and skipped where it is gone.
 public final class DisplayServicesBrightness: BrightnessBackend {
     private typealias CanChangeFn = @convention(c) (CGDirectDisplayID) -> Bool
     private typealias GetFn = @convention(c) (CGDirectDisplayID, UnsafeMutablePointer<Float>) -> Int32
