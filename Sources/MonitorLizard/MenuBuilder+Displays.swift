@@ -12,18 +12,18 @@ extension App {
         }
         menu.addItem(header)
 
-        if entry.info.isBuiltIn {
+        switch entry.brightnessSource {
+        case .system:
+            // The built-in panel, or an external display macOS dims itself
+            // (the keyboard keys work on it even when DDC doesn't).
             let row = NSMenuItem()
-            row.view = SliderRow(title: "Brightness", symbol: "sun.max", value: entry.builtInBrightness.map { Double($0) * 100 }, maximum: 100,
+            row.view = SliderRow(title: "Brightness", symbol: "sun.max", value: entry.systemBrightness.map { Double($0) * 100 }, maximum: 100,
                                  format: { "\(Int($0.rounded()))" }) { [weak self] v in
-                self?.model.setBuiltInBrightness(entry.info.id, Float(v / 100))
+                self?.model.setSystemBrightness(entry.info.id, Float(v / 100))
                 self?.refreshIcon()
             }
             menu.addItem(row)
-            return
-        }
-
-        if entry.isExternalControllable {
+        case .ddc:
             let b = NSMenuItem()
             let brightnessView = SliderRow(title: "Brightness", symbol: "sun.max",
                                value: entry.brightness.map { Double($0.current) }, maximum: Double(entry.brightness?.maximum ?? 100),
@@ -33,6 +33,12 @@ extension App {
             b.view = brightnessView
             sliderRows[entry.info.id, default: [:]][.brightness] = brightnessView
             menu.addItem(b)
+        case .none:
+            break
+        }
+        if entry.info.isBuiltIn { return }
+
+        if entry.isExternalControllable {
             let c = NSMenuItem()
             let contrastView = SliderRow(title: "Contrast", symbol: "circle.lefthalf.filled",
                                value: entry.contrast.map { Double($0.current) }, maximum: Double(entry.contrast?.maximum ?? 100),
@@ -42,7 +48,7 @@ extension App {
             c.view = contrastView
             sliderRows[entry.info.id, default: [:]][.contrast] = contrastView
             menu.addItem(c)
-        } else {
+        } else if entry.brightnessSource == .none {
             let none = NSMenuItem(title: "No DDC control", action: nil, keyEquivalent: "")
             none.isEnabled = false
             none.indentationLevel = 1
