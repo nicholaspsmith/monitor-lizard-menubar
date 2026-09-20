@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+# Copyright (c) 2026 Nicholas Smith
+
 # docs/mascot.png (square, transparent) → Resources/bundle/AppIcon.icns.
 # Without an .icns macOS shows a blank tile (e.g. in Barn's hidden-icons menu).
 set -euo pipefail
