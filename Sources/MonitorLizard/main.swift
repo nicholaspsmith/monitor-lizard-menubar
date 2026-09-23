@@ -22,6 +22,7 @@ final class App: NSObject, NSApplicationDelegate {
     /// Open-menu slider rows, so a confirmed read can correct them in place.
     var sliderRows: [CGDirectDisplayID: [VCPCode: SliderRow]] = [:]
     private var fixInProgress = false
+    private var brightnessKeys: BrightnessKeyController!
 
     override init() {
         model = DisplayModel(brightness: DisplayServicesBrightness(), nightShift: CoreBrightnessNightShift(), tvRoles: TVRoleTracker())
@@ -40,6 +41,8 @@ final class App: NSObject, NSApplicationDelegate {
                 // tick is only a safety net if one is missed. DDC is never polled.
                 self?.model.readBuiltInOnly()
                 self?.refreshIcon()
+                // Optional-safe: the first poll fires from status.start().
+                self?.brightnessKeys?.reassert()
             },
             onBuildMenu: { [weak self] menu in self?.buildMenu(menu) }
         )
@@ -53,6 +56,18 @@ final class App: NSObject, NSApplicationDelegate {
         status.start()
         yieldClient = YieldClient(item: status)
         yieldClient.start()
+
+        brightnessKeys = BrightnessKeyController(
+            target: { [weak self] in
+                guard let self else { return nil }
+                return BrightnessKeys.target(among: self.model.entries.map {
+                    BrightnessKeys.Display(id: $0.info.id, isMain: $0.info.isMain,
+                                           isBuiltIn: $0.info.isBuiltIn, hasDDC: $0.isExternalControllable)
+                })
+            },
+            step: { [weak self] id, direction in self?.model.stepBrightness(id, direction) }
+        )
+        brightnessKeys.start()
     }
 
     // MARK: - Icon
@@ -117,6 +132,15 @@ final class App: NSObject, NSApplicationDelegate {
         }
 
         menu.addItem(.separator())
+        // The keyboard's brightness keys step the main monitor over DDC.
+        let keys = actionItem("Brightness Keys", #selector(toggleBrightnessKeys))
+        keys.state = brightnessKeys.isEnabled ? .on : .off
+        keys.toolTip = "The keyboard's brightness keys change the main monitor's brightness"
+        menu.addItem(keys)
+        if brightnessKeys.isWaitingForTrust {
+            menu.addItem(actionItem("⚠ Grant Accessibility…", #selector(grantTrust)))
+        }
+
         let login = actionItem("Start at Login", #selector(toggleLogin))
         login.state = LoginItem.isEnabled ? .on : .off
         menu.addItem(login)
@@ -168,6 +192,8 @@ final class App: NSObject, NSApplicationDelegate {
         refreshIcon()
     }
 
+    @objc private func toggleBrightnessKeys() { brightnessKeys.isEnabled.toggle() }
+    @objc private func grantTrust() { brightnessKeys.requestTrust() }
     @objc private func toggleLogin() { LoginItem.toggle() }
     @objc private func quit() { NSApp.terminate(nil) }
 }

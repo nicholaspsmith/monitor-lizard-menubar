@@ -146,8 +146,36 @@ final class DisplayModel {
     func setBrightness(_ id: CGDirectDisplayID, _ value: UInt16) { write(id, .brightness, value) }
     func setContrast(_ id: CGDirectDisplayID, _ value: UInt16) { write(id, .contrast, value) }
 
-    private func write(_ id: CGDirectDisplayID, _ code: VCPCode, _ value: UInt16) {
+    /// A brightness key: one step up or down from the last value we know.
+    /// If nothing has been read yet (keys can arrive before the menu has ever
+    /// been opened), read first and step from the answer.
+    func stepBrightness(_ id: CGDirectDisplayID, _ direction: BrightnessKeys.Direction) {
         guard let entry = entry(id), let ddc = entry.ddc else { return }
+        if let value = entry.brightness {
+            write(id, .brightness, BrightnessKeys.step(value, direction))
+            return
+        }
+        ddc.read(.brightness) { [weak self] result in
+            DispatchQueue.main.async {
+                self?.store(id: id, ddc: ddc, code: .brightness, result: result)
+                if case .success(let value) = result {
+                    self?.write(id, .brightness, BrightnessKeys.step(value, direction))
+                }
+            }
+        }
+    }
+
+    private func write(_ id: CGDirectDisplayID, _ code: VCPCode, _ value: UInt16) {
+        guard let i = entries.firstIndex(where: { $0.info.id == id }), let ddc = entries[i].ddc else { return }
+        // Step from what was just asked for, not from the last confirmed read:
+        // DDCService coalesces writes queued behind a slow one, so a held key
+        // would otherwise re-request the same value until the first confirms.
+        // The confirmation (or the re-read after a failure) corrects this.
+        let known = code == .brightness ? entries[i].brightness : entries[i].contrast
+        if let known {
+            let requested = VCPValue(current: value, maximum: known.maximum)
+            if code == .brightness { entries[i].brightness = requested } else { entries[i].contrast = requested }
+        }
         ddc.write(code, value: value) { [weak self] result in
             switch result {
             case .success:
