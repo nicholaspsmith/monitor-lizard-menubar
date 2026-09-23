@@ -19,11 +19,32 @@ One section per display, then Night Shift for the whole Mac:
 | **Contrast** | Same, for contrast. |
 | **Resolution** | Drag through the sharp HiDPI "looks like" sizes. The `▸` submenu lists every mode. |
 | **Night Shift** | Toggle it, and set the warmth. |
+| **Brightness Keys** | The keyboard's brightness keys step the main monitor's brightness over DDC, sixteen steps across the range. Needs Accessibility once. |
 | **✓ / ⏳ / ✗ line** | Whether Night Shift works on that display. See below. |
 
 Sliders apply live as you drag. Nothing is polled on a timer, and nothing you
 set is stored by the app: the monitor keeps its own brightness and macOS keeps
 the rest.
+
+## Brightness keys
+
+macOS only lets the brightness keys dim the built-in panel. With **Brightness
+Keys** on (the default), Monitor Lizard catches the plain brightness keys and,
+when the main display is an external monitor it can drive, steps that
+monitor's brightness instead and eats the key; the gecko flicks its tongue as
+the change lands. When the main display is the built-in panel, or a monitor
+with no DDC, the key passes through untouched and macOS does what it always
+did. Holding a key repeats. `Ctrl` + brightness is never touched, so
+[KeyLight](https://github.com/nicholaspsmith/keylight-menubar) still gets it
+for the keyboard backlight.
+
+It listens for the media-key event an Apple keyboard sends, which is also what
+KeyLight posts for F1/F2 on a third-party keyboard, so both kinds of keyboard
+work without the two apps knowing about each other.
+
+An event tap needs **Accessibility**: grant it when prompted, or later from the
+menu's "⚠ Grant Accessibility…" row. The app is signed with the same stable
+local identity as the other Menubarn apps, so the grant survives rebuilds.
 
 ## Why Night Shift may be off on your monitor
 
@@ -68,6 +89,9 @@ talking to one monitor at the same time interfere with each other.
   IOKit interface every Apple Silicon DDC tool uses. One serial queue per
   display, every read confirmed by checksum.
 - **Built-in screen brightness** uses DisplayServices.
+- **Brightness keys** come through a `CGEventTap` from
+  [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit), bound to the two
+  brightness media keys with no modifiers.
 - **Night Shift** uses CoreBrightness.
 - **The "is this a TV?" flag** comes from CoreDisplay, the same source
   `system_profiler` reads.
