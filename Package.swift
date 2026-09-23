@@ -16,12 +16,17 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../StatusItemKit"),
+        .package(path: "../HotkeyKit"),
     ],
     targets: [
         .target(name: "MonitorLizardCore"),
         .executableTarget(
             name: "MonitorLizard",
-            dependencies: ["MonitorLizardCore", .product(name: "StatusItemKit", package: "StatusItemKit")]
+            dependencies: [
+                "MonitorLizardCore",
+                .product(name: "StatusItemKit", package: "StatusItemKit"),
+                .product(name: "HotkeyKit", package: "HotkeyKit"),
+            ]
         ),
         .testTarget(name: "MonitorLizardCoreTests", dependencies: ["MonitorLizardCore"]),
     ]
