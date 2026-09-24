@@ -24,8 +24,18 @@ final class BrightnessKeysTests: XCTestCase {
         XCTAssertEqual(BrightnessKeys.step(VCPValue(current: 4, maximum: 10), .up), 5)
     }
 
-    private func display(_ id: UInt32, main: Bool, builtIn: Bool = false, ddc: Bool = true) -> BrightnessKeys.Display {
-        BrightnessKeys.Display(id: id, isMain: main, isBuiltIn: builtIn, hasDDC: ddc)
+    func testSystemStepIsOneSixteenthOfTheRange() {
+        XCTAssertEqual(BrightnessKeys.step(0.5, .up), 0.5625, accuracy: 0.0001)
+        XCTAssertEqual(BrightnessKeys.step(0.5, .down), 0.4375, accuracy: 0.0001)
+    }
+
+    func testSystemStepClampsToTheRange() {
+        XCTAssertEqual(BrightnessKeys.step(0.98, .up), 1)
+        XCTAssertEqual(BrightnessKeys.step(0.03, .down), 0)
+    }
+
+    private func display(_ id: UInt32, main: Bool, builtIn: Bool = false, source: BrightnessSource = .ddc) -> BrightnessKeys.Display {
+        BrightnessKeys.Display(id: id, isMain: main, isBuiltIn: builtIn, source: source)
     }
 
     func testTargetIsTheMainExternalDisplayWithDDC() {
@@ -33,14 +43,20 @@ final class BrightnessKeysTests: XCTestCase {
         XCTAssertEqual(BrightnessKeys.target(among: displays), 5)
     }
 
+    func testMainExternalDisplayMacOSDimsItselfIsSteppedToo() {
+        // A TV over HDMI that refuses DDC: its row fell back to DisplayServices,
+        // so the keys take the same route rather than doing nothing.
+        XCTAssertEqual(BrightnessKeys.target(among: [display(5, main: true, source: .system)]), 5)
+    }
+
     func testBuiltInMainDisplayPassesTheKeyThrough() {
         // macOS handles the panel's own brightness keys; don't get in the way.
-        let displays = [display(1, main: true, builtIn: true, ddc: false), display(5, main: false)]
+        let displays = [display(1, main: true, builtIn: true, source: .system), display(5, main: false)]
         XCTAssertNil(BrightnessKeys.target(among: displays))
     }
 
-    func testMainDisplayWithoutDDCPassesTheKeyThrough() {
-        XCTAssertNil(BrightnessKeys.target(among: [display(5, main: true, ddc: false)]))
+    func testMainDisplayWithNoControlPassesTheKeyThrough() {
+        XCTAssertNil(BrightnessKeys.target(among: [display(5, main: true, source: .none)]))
     }
 
     func testNoMainFlagFallsBackToTheFirstDisplay() {

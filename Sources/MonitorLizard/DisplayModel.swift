@@ -17,12 +17,20 @@ final class DisplayModel {
         var ddcUnavailable = false
         var brightness: VCPValue?
         var contrast: VCPValue?
-        var builtInBrightness: Float?
+        /// DisplayServices' value: the built-in panel, or an external display
+        /// macOS can dim itself (`systemCanChange`).
+        var systemBrightness: Float?
+        var systemCanChange: Bool
         var plan: ModePlan
         var all: [ModeSpec]
         var modes: [CGDisplayMode]
         var tvState: TVRoleState
         var isExternalControllable: Bool { ddc != nil && !ddcUnavailable }
+        var brightnessSource: BrightnessSource {
+            BrightnessSource.pick(isBuiltIn: info.isBuiltIn, hasDDC: ddc != nil, ddcUnavailable: ddcUnavailable, systemCanChange: systemCanChange)
+        }
+        /// Whether DisplayServices has anything to say about this display.
+        var usesSystemBrightness: Bool { info.isBuiltIn || systemCanChange }
     }
 
     private(set) var entries: [Entry] = []
@@ -77,20 +85,25 @@ final class DisplayModel {
         let services = IORegistryScanner.makeDDCServices(for: infos)
         entries = infos.map { info in
             let (all, current, modes) = DisplayModes.specs(for: info.id)
+            // Some external displays — TVs over HDMI, Apple and some USB-C
+            // monitors — are ones macOS dims itself; the keyboard keys work on
+            // them even though DDC may not.
+            let systemCanChange = !info.isBuiltIn && brightness.canChange(info.id)
             return Entry(info: info,
                          ddc: info.isBuiltIn ? nil : services[info.id],
-                         builtInBrightness: info.isBuiltIn ? brightness.brightness(info.id) : nil,
+                         systemBrightness: info.isBuiltIn || systemCanChange ? brightness.brightness(info.id) : nil,
+                         systemCanChange: systemCanChange,
                          plan: DisplayModes.plan(all: all, current: current),
                          all: all,
                          modes: modes,
                          tvState: tvRoles.state(for: info))
         }
-        for e in entries where e.info.isBuiltIn {
+        for e in entries where e.usesSystemBrightness {
             // Keyboard keys and Control Center change the panel behind our back;
             // DisplayServices tells us, so the glyph follows without polling.
-            brightness.observeChanges(e.info.id) { [weak self] in self?.readBuiltInOnly() }
+            brightness.observeChanges(e.info.id) { [weak self] in self?.readSystemBrightness() }
         }
-        Log.menu.info("enumerated \(self.entries.count) displays, \(services.count) with DDC")
+        Log.menu.info("enumerated \(self.entries.count) displays, \(services.count) with DDC, \(self.entries.filter(\.systemCanChange).count) external via DisplayServices")
         onChange?()
         for e in entries where tvRoles.needsFix(e.info) { onNeedsTVFix?(e.info) }
         readValues()
@@ -98,9 +111,8 @@ final class DisplayModel {
 
     func readValues() {
         for (index, entry) in entries.enumerated() {
-            if entry.info.isBuiltIn {
-                entries[index].builtInBrightness = brightness.brightness(entry.info.id)
-                continue
+            if entry.usesSystemBrightness {
+                entries[index].systemBrightness = brightness.brightness(entry.info.id)
             }
             guard let ddc = entry.ddc else { continue }
             let id = entry.info.id
@@ -113,13 +125,13 @@ final class DisplayModel {
         }
     }
 
-    /// The poll tick: built-in brightness only. DDC is never read on a timer.
-    func readBuiltInOnly() {
+    /// The poll tick: DisplayServices brightness only. DDC is never read on a timer.
+    func readSystemBrightness() {
         var changed = false
-        for (i, e) in entries.enumerated() where e.info.isBuiltIn {
+        for (i, e) in entries.enumerated() where e.usesSystemBrightness {
             let value = brightness.brightness(e.info.id)
-            if value != entries[i].builtInBrightness {
-                entries[i].builtInBrightness = value
+            if value != entries[i].systemBrightness {
+                entries[i].systemBrightness = value
                 changed = true
             }
         }
@@ -150,7 +162,15 @@ final class DisplayModel {
     /// If nothing has been read yet (keys can arrive before the menu has ever
     /// been opened), read first and step from the answer.
     func stepBrightness(_ id: CGDirectDisplayID, _ direction: BrightnessKeys.Direction) {
-        guard let entry = entry(id), let ddc = entry.ddc else { return }
+        guard let entry = entry(id) else { return }
+        if entry.brightnessSource == .system {
+            // DDC refused but macOS dims this display itself: step it the way
+            // its Brightness row does.
+            let current = entry.systemBrightness ?? brightness.brightness(id) ?? 0
+            setSystemBrightness(id, BrightnessKeys.step(current, direction))
+            return
+        }
+        guard let ddc = entry.ddc else { return }
         if let value = entry.brightness {
             write(id, .brightness, BrightnessKeys.step(value, direction))
             return
@@ -196,9 +216,9 @@ final class DisplayModel {
         }
     }
 
-    func setBuiltInBrightness(_ id: CGDirectDisplayID, _ value: Float) {
+    func setSystemBrightness(_ id: CGDirectDisplayID, _ value: Float) {
         guard brightness.setBrightness(id, value), let i = entries.firstIndex(where: { $0.info.id == id }) else { return }
-        entries[i].builtInBrightness = value
+        entries[i].systemBrightness = value
         onChange?()
     }
 
@@ -209,11 +229,14 @@ final class DisplayModel {
 
     func entry(_ id: CGDirectDisplayID) -> Entry? { entries.first { $0.info.id == id } }
 
-    /// What the glyph shows: the main display's brightness, whichever backend owns it.
+    /// What the glyph shows: the main display's brightness, from whichever backend its row uses.
     var mainBrightnessFraction: CGFloat {
         guard let main = entries.first(where: { $0.info.isMain }) ?? entries.first else { return 0 }
-        if let b = main.builtInBrightness { return CGFloat(b) }
-        if let v = main.brightness, v.maximum > 0 { return CGFloat(v.current) / CGFloat(v.maximum) }
+        switch main.brightnessSource {
+        case .system: return CGFloat(main.systemBrightness ?? 0)
+        case .ddc: if let v = main.brightness, v.maximum > 0 { return CGFloat(v.current) / CGFloat(v.maximum) }
+        case .none: break
+        }
         return 0
     }
 }

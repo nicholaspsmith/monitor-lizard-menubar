@@ -15,11 +15,11 @@ One section per display, then Night Shift for the whole Mac:
 
 | Row | What it does |
 |-----|--------------|
-| **Brightness** | Sets the monitor's own backlight over DDC/CI, like pressing its front buttons. Also works for the built-in screen. |
+| **Brightness** | Sets the monitor's own backlight over DDC/CI, like pressing its front buttons. Also works for the built-in screen, and for displays macOS dims itself (TVs over HDMI, Apple and some USB-C monitors — the ones the keyboard brightness keys already work on). |
 | **Contrast** | Same, for contrast. |
 | **Resolution** | Drag through the sharp HiDPI "looks like" sizes. The `▸` submenu lists every mode. |
 | **Night Shift** | Toggle it, and set the warmth. |
-| **Brightness Keys** | The keyboard's brightness keys step the main monitor's brightness over DDC, sixteen steps across the range. Needs Accessibility once. |
+| **Brightness Keys** | The keyboard's brightness keys step the main monitor's brightness, sixteen steps across the range, by the same route as its Brightness row. Needs Accessibility once. |
 | **✓ / ⏳ / ✗ line** | Whether Night Shift works on that display. See below. |
 
 Sliders apply live as you drag. Nothing is polled on a timer, and nothing you
@@ -32,9 +32,10 @@ macOS only lets the brightness keys dim the built-in panel. With **Brightness
 Keys** on (the default), Monitor Lizard catches the plain brightness keys and,
 when the main display is an external monitor it can drive, steps that
 monitor's brightness instead and eats the key; the gecko flicks its tongue as
-the change lands. When the main display is the built-in panel, or a monitor
-with no DDC, the key passes through untouched and macOS does what it always
-did. Holding a key repeats. `Ctrl` + brightness is never touched, so
+the change lands. A monitor that refuses DDC but that macOS can dim itself is
+stepped through DisplayServices, the same route its Brightness row uses. When
+the main display is the built-in panel, or a monitor nothing can drive, the
+key passes through untouched and macOS does what it always did. Holding a key repeats. `Ctrl` + brightness is never touched, so
 [KeyLight](https://github.com/nicholaspsmith/keylight-menubar) still gets it
 for the keyboard backlight.
 
@@ -88,10 +89,13 @@ talking to one monitor at the same time interfere with each other.
 - **Brightness and contrast** go over DDC/CI through `IOAVService`, the private
   IOKit interface every Apple Silicon DDC tool uses. One serial queue per
   display, every read confirmed by checksum.
-- **Built-in screen brightness** uses DisplayServices.
+- **Built-in screen brightness** uses DisplayServices, as does any external
+  display macOS says it can dim itself (`DisplayServicesCanChangeBrightness`)
+  once a DDC read has failed on it. That is the route the keyboard keys take.
 - **Brightness keys** come through a `CGEventTap` from
   [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit), bound to the two
-  brightness media keys with no modifiers.
+  brightness media keys with no modifiers. They step the main display over
+  whichever route its Brightness row uses, DDC or DisplayServices.
 - **Night Shift** uses CoreBrightness.
 - **The "is this a TV?" flag** comes from CoreDisplay, the same source
   `system_profiler` reads.
