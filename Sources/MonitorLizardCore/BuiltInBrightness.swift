@@ -19,8 +19,10 @@ public protocol BrightnessBackend: AnyObject {
 }
 
 /// DisplayServices.framework (private) — what Control Center uses for the
-/// built-in panel. `BrightnessChanged` is posted after a set so Control
-/// Center's own slider follows.
+/// built-in panel. On macOS 14.0–15.5 `BrightnessChanged` is posted after a
+/// set so Control Center's own slider follows; 15.6 removed that symbol and
+/// `SetBrightness` now posts the change notification itself, so the call is
+/// resolved optionally and skipped where it is gone.
 public final class DisplayServicesBrightness: BrightnessBackend {
     private typealias CanChangeFn = @convention(c) (CGDirectDisplayID) -> Bool
     private typealias GetFn = @convention(c) (CGDirectDisplayID, UnsafeMutablePointer<Float>) -> Int32
@@ -87,5 +89,23 @@ public final class DisplayServicesBrightness: BrightnessBackend {
             DispatchQueue.main.async { DisplayServicesBrightness.handlers.values.forEach { $0() } }
         }
         if rc != 0 { Log.menu.error("brightness change registration for display \(id) failed rc=\(rc)") }
+    }
+}
+
+/// Which backend drives a display's Brightness row.
+public enum BrightnessSource: Equatable {
+    case ddc      // the monitor's own backlight over DDC/CI
+    case system   // DisplayServices — the built-in panel, or an external display macOS dims itself
+    case none
+
+    /// DDC wins while the monitor answers it: that is the backlight itself,
+    /// and `systemCanChange` says nothing about *how* macOS would dim the
+    /// display. Once a read has failed (a TV over HDMI, typically) the
+    /// display falls back to DisplayServices if macOS can drive it — the same
+    /// route the keyboard brightness keys take.
+    public static func pick(isBuiltIn: Bool, hasDDC: Bool, ddcUnavailable: Bool, systemCanChange: Bool) -> BrightnessSource {
+        if isBuiltIn { return .system }
+        if hasDDC && !ddcUnavailable { return .ddc }
+        return systemCanChange ? .system : .none
     }
 }

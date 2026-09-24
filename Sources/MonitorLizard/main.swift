@@ -9,7 +9,8 @@ import MonitorLizardCore
 import StatusItemKit
 
 /// Monitor Lizard — external-display control for the menu bar: DDC brightness
-/// and contrast, HiDPI resolution, built-in brightness, and Night Shift with an
+/// and contrast (DisplayServices brightness where macOS drives the display
+/// itself), HiDPI resolution, built-in brightness, and Night Shift with an
 /// automatic fix for displays macOS wrongly calls televisions.
 final class App: NSObject, NSApplicationDelegate {
     private var status: StatusItemController!
@@ -21,6 +22,9 @@ final class App: NSObject, NSApplicationDelegate {
     private var tongueUntil = Date.distantPast
     /// Open-menu slider rows, so a confirmed read can correct them in place.
     var sliderRows: [CGDirectDisplayID: [VCPCode: SliderRow]] = [:]
+    /// Same, for DisplayServices brightness rows: the keyboard keys and
+    /// Control Center move these while the menu is open.
+    var systemBrightnessRows: [CGDirectDisplayID: SliderRow] = [:]
     private var fixInProgress = false
     private var brightnessKeys: BrightnessKeyController!
 
@@ -39,7 +43,7 @@ final class App: NSObject, NSApplicationDelegate {
             onPoll: { [weak self] in
                 // Brightness and Night Shift both push change notifications; this
                 // tick is only a safety net if one is missed. DDC is never polled.
-                self?.model.readBuiltInOnly()
+                self?.model.readSystemBrightness()
                 self?.refreshIcon()
                 // Optional-safe: the first poll fires from status.start().
                 self?.brightnessKeys?.reassert()
@@ -62,7 +66,7 @@ final class App: NSObject, NSApplicationDelegate {
                 guard let self else { return nil }
                 return BrightnessKeys.target(among: self.model.entries.map {
                     BrightnessKeys.Display(id: $0.info.id, isMain: $0.info.isMain,
-                                           isBuiltIn: $0.info.isBuiltIn, hasDDC: $0.isExternalControllable)
+                                           isBuiltIn: $0.info.isBuiltIn, source: $0.brightnessSource)
                 })
             },
             step: { [weak self] id, direction in self?.model.stepBrightness(id, direction) }
@@ -92,10 +96,12 @@ final class App: NSObject, NSApplicationDelegate {
 
     private func modelChanged() {
         refreshIcon()
-        // Correct any open slider to the value the monitor confirmed.
+        // Correct any open slider to the value the monitor confirmed, or that
+        // DisplayServices reports after a change made elsewhere.
         for entry in model.entries {
             if let v = entry.brightness { sliderRows[entry.info.id]?[.brightness]?.update(value: Double(v.current)) }
             if let v = entry.contrast { sliderRows[entry.info.id]?[.contrast]?.update(value: Double(v.current)) }
+            if let b = entry.systemBrightness { systemBrightnessRows[entry.info.id]?.update(value: Double(b) * 100) }
         }
     }
 
@@ -105,6 +111,7 @@ final class App: NSObject, NSApplicationDelegate {
         // StatusItemController.menuNeedsUpdate already clears the menu before
         // calling onBuildMenu.
         sliderRows = [:]
+        systemBrightnessRows = [:]
         model.readValues()
 
         if model.entries.isEmpty {
