@@ -22,26 +22,37 @@ public enum BrightnessKeys {
         }
     }
 
+    /// The same step over DisplayServices' 0…1 range.
+    public static func step(_ fraction: Float, _ direction: Direction) -> Float {
+        let size = 1 / Float(stepsAcrossRange)
+        switch direction {
+        case .up: return min(1, fraction + size)
+        case .down: return max(0, fraction - size)
+        }
+    }
+
     public struct Display: Equatable {
         public let id: CGDirectDisplayID
         public let isMain: Bool
         public let isBuiltIn: Bool
-        public let hasDDC: Bool
-        public init(id: CGDirectDisplayID, isMain: Bool, isBuiltIn: Bool, hasDDC: Bool) {
+        /// What the display's Brightness row uses — the keys take the same route.
+        public let source: BrightnessSource
+        public init(id: CGDirectDisplayID, isMain: Bool, isBuiltIn: Bool, source: BrightnessSource) {
             self.id = id
             self.isMain = isMain
             self.isBuiltIn = isBuiltIn
-            self.hasDDC = hasDDC
+            self.source = source
         }
     }
 
     /// The display a brightness key steps: the main display, if it is an
-    /// external monitor we can drive over DDC. `nil` means leave the key to
-    /// macOS — the main display is the built-in panel (which macOS dims
-    /// itself) or a monitor with no DDC (nothing to do).
+    /// external monitor we can drive — over DDC, or through DisplayServices
+    /// once DDC has refused and macOS can dim it itself. `nil` means leave
+    /// the key to macOS — the main display is the built-in panel (which macOS
+    /// dims itself) or a monitor nothing can drive.
     public static func target(among displays: [Display]) -> CGDirectDisplayID? {
         guard let main = displays.first(where: \.isMain) ?? displays.first else { return nil }
-        guard !main.isBuiltIn, main.hasDDC else { return nil }
+        guard !main.isBuiltIn, main.source != .none else { return nil }
         return main.id
     }
 }

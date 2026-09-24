@@ -8,12 +8,14 @@ import AppKit
 import HotkeyKit
 import MonitorLizardCore
 
-/// Makes the keyboard's brightness keys drive the main external monitor over
-/// DDC. It listens for the plain brightness media keys — the ones an Apple
-/// keyboard sends, and the ones KeyLight posts for F1/F2 on other boards —
-/// and swallows a press only when the main display is a monitor we control;
-/// otherwise the key passes through and macOS dims the built-in panel as
-/// usual. Ctrl+brightness is not bound, so KeyLight still gets it.
+/// Makes the keyboard's brightness keys drive the main external monitor —
+/// over DDC, or through DisplayServices where DDC has refused and macOS can
+/// dim the display itself. It listens for the plain brightness media keys —
+/// the ones an Apple keyboard sends, and the ones KeyLight posts for F1/F2 on
+/// other boards — and swallows a press only when the main display is a
+/// monitor we control; otherwise the key passes through and macOS dims the
+/// built-in panel as usual. Ctrl+brightness is not bound, so KeyLight still
+/// gets it.
 ///
 /// Needs Accessibility, like every event tap. The tap is only created once
 /// trusted; until then `isWaitingForTrust` is true and the menu says so.
