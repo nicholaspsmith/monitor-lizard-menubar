@@ -146,6 +146,7 @@ final class App: NSObject, NSApplicationDelegate {
         menu.addItem(login)
         menu.addItem(appearanceMenu.menuItem())
         menu.addItem(.separator())
+        menu.addItem(AppVersion.menuItem())
         menu.addItem(actionItem("Quit Monitor Lizard", #selector(quit), key: "q"))
     }
 
