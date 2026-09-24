@@ -162,7 +162,15 @@ final class DisplayModel {
     /// If nothing has been read yet (keys can arrive before the menu has ever
     /// been opened), read first and step from the answer.
     func stepBrightness(_ id: CGDirectDisplayID, _ direction: BrightnessKeys.Direction) {
-        guard let entry = entry(id), let ddc = entry.ddc else { return }
+        guard let entry = entry(id) else { return }
+        if entry.brightnessSource == .system {
+            // DDC refused but macOS dims this display itself: step it the way
+            // its Brightness row does.
+            let current = entry.systemBrightness ?? brightness.brightness(id) ?? 0
+            setSystemBrightness(id, BrightnessKeys.step(current, direction))
+            return
+        }
+        guard let ddc = entry.ddc else { return }
         if let value = entry.brightness {
             write(id, .brightness, BrightnessKeys.step(value, direction))
             return

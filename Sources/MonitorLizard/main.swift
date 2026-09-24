@@ -66,7 +66,7 @@ final class App: NSObject, NSApplicationDelegate {
                 guard let self else { return nil }
                 return BrightnessKeys.target(among: self.model.entries.map {
                     BrightnessKeys.Display(id: $0.info.id, isMain: $0.info.isMain,
-                                           isBuiltIn: $0.info.isBuiltIn, hasDDC: $0.isExternalControllable)
+                                           isBuiltIn: $0.info.isBuiltIn, source: $0.brightnessSource)
                 })
             },
             step: { [weak self] id, direction in self?.model.stepBrightness(id, direction) }
