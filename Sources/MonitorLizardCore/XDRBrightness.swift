@@ -13,6 +13,18 @@ import CoreGraphics
 public enum XDRGamma {
     public static let tableSize = 256
 
+    /// The value the overlay pixel draws. Anything above SDR white makes the
+    /// window server switch the panel into HDR mode; BrightIntosh uses 1.6.
+    public static let overlayValue: Double = 1.6
+
+    /// `NSScreen.maximumExtendedDynamicRangeColorComponentValue` sits at 1.0
+    /// until HDR mode is engaged; a table written before that only clips.
+    public static let hdrReadyThreshold: Float = 1.05
+
+    public static func isHDREngaged(currentHeadroom: Float) -> Bool {
+        currentHeadroom > hdrReadyThreshold
+    }
+
     /// Never map SDR white higher than this, whatever headroom the panel
     /// reports: the potential headroom on an XDR panel is reference-mode HDR
     /// (16×), which would blow every highlight out. 2× is ~1000 nits from a
@@ -29,6 +41,12 @@ public enum XDRGamma {
     public static func table(factor: Float, size: Int = tableSize) -> [CGGammaValue] {
         guard size > 1 else { return [factor] }
         return (0..<size).map { Float($0) / Float(size - 1) * factor }
+    }
+
+    /// The panel's own table lifted by `factor`, so a calibration curve keeps
+    /// its shape and only its scale changes.
+    public static func scaled(_ base: [CGGammaValue], by factor: Float) -> [CGGammaValue] {
+        base.map { $0 * factor }
     }
 
     /// Whether a transfer table still lifts anything past SDR white — the
