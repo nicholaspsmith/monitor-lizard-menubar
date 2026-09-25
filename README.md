@@ -19,6 +19,7 @@ One section per display, then Night Shift for the whole Mac:
 | **Contrast** | Same, for contrast. |
 | **Resolution** | Drag through the sharp HiDPI "looks like" sizes. The `▸` submenu lists every mode. |
 | **Night Shift** | Toggle it, and set the warmth. |
+| **XDR Brightness** | Built-in XDR panel only: brightens it past its normal maximum. Off at every launch. See below. |
 | **Brightness Keys** | The keyboard's brightness keys step the main monitor's brightness, sixteen steps across the range, by the same route as its Brightness row. Needs Accessibility once. |
 | **✓ / ⏳ / ✗ line** | Whether Night Shift works on that display. See below. |
 
@@ -46,6 +47,27 @@ work without the two apps knowing about each other.
 An event tap needs **Accessibility**: grant it when prompted, or later from the
 menu's "⚠ Grant Accessibility…" row. The app is signed with the same stable
 local identity as the other Menubarn apps, so the grant survives rebuilds.
+
+## XDR brightness
+
+On a MacBook Pro with an XDR panel, **XDR Brightness** (under the built-in
+display) pushes the whole screen past the normal 500-nit ceiling, up to twice
+that, using the headroom the panel keeps for HDR. **Boost** sets how far. It
+works the way BrightIntosh, Lunar and BetterDisplay do: an invisible
+full-screen overlay switches the panel into HDR mode, and a gamma table lifts
+ordinary white into the extra range.
+
+A leftover gamma table is what scrambles colours after wake with other apps,
+so Monitor Lizard only keeps one on the panel while it is safe: it is removed
+before sleep, when the displays go to sleep, on quit, whenever the display
+setup changes (lid closed, a monitor plugged in), and put back only once
+things have settled. After each removal the app reads the table back to make
+sure the boost is really gone. It is never applied to external displays, it
+is off again every time the app starts, and by default it switches itself off
+when you unplug (**Off on Battery**).
+
+Side effects: HDR video can clip its brightest highlights while it is on, and
+the panel draws more power and runs warmer.
 
 ## Why Night Shift may be off on your monitor
 
