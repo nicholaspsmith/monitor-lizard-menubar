@@ -33,6 +33,24 @@ final class XDRBrightnessTests: XCTestCase {
         XCTAssertFalse(XDRGamma.isPlainRamp(t))
     }
 
+    func testScalingKeepsThePanelsOwnCurveAndLiftsIt() {
+        // A calibrated (non-linear) table keeps its shape; only the scale changes.
+        let base: [CGGammaValue] = (0..<XDRGamma.tableSize).map { powf(Float($0) / 255, 2.2) }
+        let scaled = XDRGamma.scaled(base, by: 1.5)
+        XCTAssertEqual(scaled.count, base.count)
+        XCTAssertEqual(scaled.last!, 1.5, accuracy: 0.0001)
+        XCTAssertEqual(scaled[128], base[128] * 1.5, accuracy: 0.0001)
+        XCTAssertTrue(XDRGamma.carriesBoost(scaled))
+        XCTAssertFalse(XDRGamma.carriesBoost(XDRGamma.scaled(base, by: 1)))
+    }
+
+    func testHDRIsEngagedOnlyOncePanelReportsHeadroom() {
+        // Before the overlay takes effect the panel reports 1.0; a rounding wobble is not HDR.
+        XCTAssertFalse(XDRGamma.isHDREngaged(currentHeadroom: 1))
+        XCTAssertFalse(XDRGamma.isHDREngaged(currentHeadroom: 1.02))
+        XCTAssertTrue(XDRGamma.isHDREngaged(currentHeadroom: 1.6))
+    }
+
     func testIdentityTableIsAPlainRampWithNoBoost() {
         let t = XDRGamma.table(factor: 1)
         XCTAssertFalse(XDRGamma.carriesBoost(t))

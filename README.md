@@ -53,9 +53,9 @@ local identity as the other Menubarn apps, so the grant survives rebuilds.
 On a MacBook Pro with an XDR panel, **XDR Brightness** (under the built-in
 display) pushes the whole screen past the normal 500-nit ceiling, up to twice
 that, using the headroom the panel keeps for HDR. **Boost** sets how far. It
-works the way BrightIntosh, Lunar and BetterDisplay do: an invisible
-full-screen overlay switches the panel into HDR mode, and a gamma table lifts
-ordinary white into the extra range.
+works the way BrightIntosh does: a single pixel of HDR white in the panel's
+top-left corner switches it into HDR mode, and once the panel reports the
+headroom a gamma table lifts ordinary white into it.
 
 A leftover gamma table is what scrambles colours after wake with other apps,
 so Monitor Lizard only keeps one on the panel while it is safe: it is removed
