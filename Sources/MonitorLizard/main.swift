@@ -11,7 +11,8 @@ import StatusItemKit
 /// Monitor Lizard — external-display control for the menu bar: DDC brightness
 /// and contrast (DisplayServices brightness where macOS drives the display
 /// itself), HiDPI resolution, built-in brightness, and Night Shift with an
-/// automatic fix for displays macOS wrongly calls televisions.
+/// automatic fix for displays macOS wrongly calls televisions, and XDR
+/// brightness for the built-in panel.
 final class App: NSObject, NSApplicationDelegate {
     private var status: StatusItemController!
     private var yieldClient: YieldClient!
@@ -27,6 +28,8 @@ final class App: NSObject, NSApplicationDelegate {
     var systemBrightnessRows: [CGDirectDisplayID: SliderRow] = [:]
     private var fixInProgress = false
     private var brightnessKeys: BrightnessKeyController!
+    /// XDR brightness for the built-in panel; off at every launch.
+    let xdr = XDRController()
 
     override init() {
         model = DisplayModel(brightness: DisplayServicesBrightness(), nightShift: CoreBrightnessNightShift(), tvRoles: TVRoleTracker())
@@ -72,6 +75,12 @@ final class App: NSObject, NSApplicationDelegate {
             step: { [weak self] id, direction in self?.model.stepBrightness(id, direction) }
         )
         brightnessKeys.start()
+        xdr.start()
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        // The boost's transfer table must never outlive the app.
+        xdr.stop()
     }
 
     // MARK: - Icon
