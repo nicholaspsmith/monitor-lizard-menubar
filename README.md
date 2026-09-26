@@ -19,6 +19,7 @@ One section per display, then Night Shift for the whole Mac:
 | **Contrast** | Same, for contrast. |
 | **Resolution** | Drag through the sharp HiDPI "looks like" sizes. The `▸` submenu lists every mode. |
 | **Night Shift** | Toggle it, and set the warmth. |
+| **Dim** | Built-in panel only: dims it past its lowest brightness, down to a tenth of it. The brightness-down key gets there too. Off at every launch. See below. |
 | **XDR Brightness** | Built-in XDR panel only: brightens it past its normal maximum. Off at every launch. See below. |
 | **Brightness Keys** | The keyboard's brightness keys step the main monitor's brightness, sixteen steps across the range, by the same route as its Brightness row. Needs Accessibility once. |
 | **✓ / ⏳ / ✗ line** | Whether Night Shift works on that display. See below. |
@@ -36,7 +37,10 @@ monitor's brightness instead and eats the key; the gecko flicks its tongue as
 the change lands. A monitor that refuses DDC but that macOS can dim itself is
 stepped through DisplayServices, the same route its Brightness row uses. When
 the main display is the built-in panel, or a monitor nothing can drive, the
-key passes through untouched and macOS does what it always did. Holding a key repeats. `Ctrl` + brightness is never touched, so
+key passes through untouched and macOS does what it always did, with one
+addition: once the built-in panel is at macOS's lowest brightness, further
+presses of brightness-down **dim** it (below), and brightness-up walks back
+out of the dim before macOS brightens again. Holding a key repeats. `Ctrl` + brightness is never touched, so
 [KeyLight](https://github.com/nicholaspsmith/keylight-menubar) still gets it
 for the keyboard backlight.
 
@@ -47,6 +51,25 @@ work without the two apps knowing about each other.
 An event tap needs **Accessibility**: grant it when prompted, or later from the
 menu's "⚠ Grant Accessibility…" row. The app is signed with the same stable
 local identity as the other Menubarn apps, so the grant survives rebuilds.
+
+## Dim
+
+At macOS's lowest brightness the built-in panel's backlight is already at its
+minimum, and it is still bright in a dark room. **Dim** (under the built-in
+display) goes further by scaling the panel's gamma table down, so everything
+lit gets darker. Eight key presses past zero take it to 75, 56, 42, 32, 24,
+18, 13 and finally 10% of macOS's minimum; the slider covers the same range
+smoothly.
+
+It is the XDR boost's gamma table turned the other way, so it follows the
+same safety rules below: removed before sleep, display sleep, on quit and
+while the display setup changes, checked after removal, and off again every
+time the app starts. It replaces XDR brightness while on (the two can't be on
+at once). Raising the brightness another way, such as Control Center or
+auto-brightness in a brighter room, cancels it.
+
+Blacks stay as they are, because the backlight is not dimmed any further,
+and screenshots and recordings are not dimmed.
 
 ## XDR brightness
 
