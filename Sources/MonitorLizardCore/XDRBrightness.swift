@@ -37,6 +37,14 @@ public enum XDRGamma {
         return 1 + max(0, min(1, boost)) * (top - 1)
     }
 
+    /// Whether the table on the panel needs rewriting for a new factor. The
+    /// headroom ramps up for a couple of seconds after HDR engages and moves
+    /// with brightness, so the factor is tracked, not computed once.
+    public static func shouldRewrite(written: Float?, wanted: Float, tolerance: Float = 0.005) -> Bool {
+        guard let written else { return true }
+        return abs(written - wanted) > tolerance
+    }
+
     /// A linear ramp scaled by `factor`: entry i is i/(n-1) × factor.
     public static func table(factor: Float, size: Int = tableSize) -> [CGGammaValue] {
         guard size > 1 else { return [factor] }

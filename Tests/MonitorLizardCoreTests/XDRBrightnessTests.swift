@@ -79,4 +79,19 @@ final class XDRBrightnessTests: XCTestCase {
         XCTAssertFalse(XDRPolicy.shouldSwitchOff(enabled: true, onBattery: false, offOnBattery: true))
         XCTAssertFalse(XDRPolicy.shouldSwitchOff(enabled: false, onBattery: true, offOnBattery: true))
     }
+
+    // The panel's headroom ramps from 1.0 to its maximum over ~2 s after HDR
+    // engages (measured 1.0 → 5.0 in 2.25 s), and moves with brightness; the
+    // table is rewritten whenever the factor it should carry changes.
+    func testRewriteWhenTheFactorMoves() {
+        XCTAssertTrue(XDRGamma.shouldRewrite(written: nil, wanted: 1.2))
+        XCTAssertTrue(XDRGamma.shouldRewrite(written: 1.26, wanted: 2))
+        XCTAssertFalse(XDRGamma.shouldRewrite(written: 2, wanted: 2.002))
+    }
+
+    func testFactorOnceTheHeadroomHasRamped() {
+        XCTAssertEqual(XDRGamma.factor(boost: 1, headroom: 1.26), 1.26, accuracy: 1e-6, "early in the ramp")
+        XCTAssertEqual(XDRGamma.factor(boost: 1, headroom: 5), 2, accuracy: 1e-6, "ramped: capped at maxFactor")
+        XCTAssertEqual(XDRGamma.factor(boost: 0.5, headroom: 5), 1.5, accuracy: 1e-6)
+    }
 }

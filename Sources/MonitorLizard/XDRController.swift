@@ -61,6 +61,14 @@ final class XDRController {
     private var baseTables: [CGDirectDisplayID: [CGGammaValue]] = [:]
     private var boosted: Set<CGDirectDisplayID> = []
     private var hdrWaits: [CGDirectDisplayID: DispatchWorkItem] = [:]
+    /// The factor each boosted panel's table carries now.
+    private var writtenFactors: [CGDirectDisplayID: Float] = [:]
+    /// While boosted: follows the panel's headroom, which ramps up for ~2 s
+    /// after HDR engages (1.0 → 5.0 measured) and moves with brightness.
+    /// Without it the boost locked at whatever headroom the first write saw
+    /// (~1.26), and the Boost slider only spanned 1.0…1.26.
+    private var headroomTimer: Timer?
+    private static let headroomInterval: TimeInterval = 0.25
     private var powerSource: CFRunLoopSource?
 
     init() {
@@ -181,6 +189,7 @@ final class XDRController {
             overlays[id] = nil
             baseTables[id] = nil
             boosted.remove(id)
+            writtenFactors[id] = nil
             hdrWaits[id]?.cancel()
             hdrWaits[id] = nil
         }
@@ -238,19 +247,44 @@ final class XDRController {
         }
         guard let base = baseTables[id] else { return }
         let factor = XDRGamma.factor(boost: boost, headroom: headroom)
+        guard XDRGamma.shouldRewrite(written: writtenFactors[id], wanted: factor) else { return }
         var table = XDRGamma.scaled(base, by: factor)
         let rc = CGSetDisplayTransferByTable(id, UInt32(table.count), &table, &table, &table)
         if rc == .success {
             if !boosted.contains(id) {
                 Log.xdr.info("display \(id): boost on, factor \(factor) of headroom \(headroom)")
+            } else {
+                Log.xdr.debug("display \(id): factor \(factor) of headroom \(headroom)")
             }
             boosted.insert(id)
+            writtenFactors[id] = factor
+            startTrackingHeadroom()
         } else {
             Log.xdr.error("display \(id): transfer table write failed rc=\(rc.rawValue)")
         }
     }
 
+    private func startTrackingHeadroom() {
+        guard headroomTimer == nil else { return }
+        let t = Timer(timeInterval: Self.headroomInterval, repeats: true) { [weak self] _ in self?.trackHeadroom() }
+        RunLoop.main.add(t, forMode: .common) // keeps following while the menu is open
+        headroomTimer = t
+    }
+
+    private func trackHeadroom() {
+        for id in boosted {
+            guard let screen = Self.screen(for: id) else { continue }
+            let headroom = Float(screen.maximumExtendedDynamicRangeColorComponentValue)
+            // Out of HDR mode (it can lapse): leave it to the next apply.
+            guard XDRGamma.isHDREngaged(currentHeadroom: headroom) else { continue }
+            writeTable(id, headroom: headroom)
+        }
+    }
+
     private func clear() {
+        headroomTimer?.invalidate()
+        headroomTimer = nil
+        writtenFactors = [:]
         for work in hdrWaits.values { work.cancel() }
         hdrWaits = [:]
         let ids = boosted
