@@ -31,10 +31,11 @@ final class App: NSObject, NSApplicationDelegate {
     /// XDR brightness for the built-in panel; off at every launch.
     let xdr = XDRController()
     /// Dimming the built-in panel below macOS's lowest lit brightness; off at
-    /// every launch. Exclusive with XDR.
+    /// every launch.
     let dimmer = DimOverlayController()
-    /// The open menu's Dim row, so the keys move it.
-    weak var dimRow: SliderRow?
+    /// The open menu's built-in Brightness row (dim, macOS, XDR boost in one),
+    /// so the keys and outside changes move it.
+    weak var builtInRow: SliderRow?
     /// The built-in panel's last macOS brightness, to notice it being raised.
     private var lastBuiltInBrightness: Float?
 
@@ -83,11 +84,14 @@ final class App: NSObject, NSApplicationDelegate {
                     direction: direction,
                     builtInBrightness: builtIn.flatMap { self.model.liveSystemBrightness($0.info.id) },
                     dimLevel: self.dimmer.level,
-                    dimAvailable: self.dimmer.isAvailable
+                    dimAvailable: self.dimmer.isAvailable,
+                    xdrEnabled: self.xdr.isEnabled,
+                    boost: self.xdr.boost
                 )
             },
             stepExternal: { [weak self] id, direction in self?.model.stepBrightness(id, direction) },
-            stepDim: { [weak self] direction in self?.stepDim(direction) }
+            stepDim: { [weak self] direction in self?.stepDim(direction) },
+            stepBoost: { [weak self] direction in self?.stepBoost(direction) }
         )
         brightnessKeys.start()
         xdr.start()
@@ -126,22 +130,46 @@ final class App: NSObject, NSApplicationDelegate {
         guard let builtIn = model.entries.first(where: { $0.info.isBuiltIn }) else { return }
         let brightness = model.liveSystemBrightness(builtIn.info.id) ?? 0
         let next = PanelDim.keyStep(level: dimmer.level, brightness: brightness, direction: direction)
-        if next.level > 0 { setDim(next.level) }
+        if next.level > 0 { dimmer.level = next.level }
         if let b = next.brightness {
             // Set before `lastBuiltInBrightness` sees it, so coming back from
             // off doesn't read as someone raising the brightness.
             lastBuiltInBrightness = b
             model.setSystemBrightness(builtIn.info.id, b)
         }
-        if next.level == 0 { setDim(0) }
-        dimRow?.update(value: Double(dimmer.level) * 100)
+        if next.level == 0 { dimmer.level = 0 }
+        refreshBuiltInRow()
     }
 
-    /// Dim and XDR brightness are opposite ends of the range: dimming turns
-    /// XDR off.
-    func setDim(_ level: Float) {
-        if level > 0 && xdr.isEnabled { xdr.setEnabled(false) }
-        dimmer.level = level
+    /// A brightness key press past full brightness with XDR on, or back.
+    private func stepBoost(_ direction: BrightnessKeys.Direction) {
+        xdr.boost = BuiltInSlider.boostStep(xdr.boost, direction)
+        refreshBuiltInRow()
+    }
+
+    /// Where the built-in panel is along its one Brightness slider.
+    func builtInLevel() -> BuiltInLevel? {
+        guard let entry = model.entries.first(where: { $0.info.isBuiltIn }) else { return nil }
+        return BuiltInLevel(dim: dimmer.level, brightness: entry.systemBrightness ?? 0, boost: xdr.boost)
+    }
+
+    /// The built-in Brightness slider moved: set the dim, macOS brightness and
+    /// boost it stands for.
+    func setBuiltIn(position: Double) {
+        guard let entry = model.entries.first(where: { $0.info.isBuiltIn }) else { return }
+        let level = BuiltInSlider.level(at: position, xdr: xdr.isEnabled)
+        dimmer.level = level.dim
+        if xdr.isEnabled { xdr.boost = level.boost }
+        if entry.systemBrightness != level.brightness {
+            lastBuiltInBrightness = level.brightness
+            model.setSystemBrightness(entry.info.id, level.brightness)
+        }
+        refreshIcon()
+    }
+
+    func refreshBuiltInRow() {
+        guard let level = builtInLevel() else { return }
+        builtInRow?.update(value: BuiltInSlider.position(level, xdr: xdr.isEnabled) * 100)
     }
 
     private func modelChanged() {
@@ -151,7 +179,6 @@ final class App: NSObject, NSApplicationDelegate {
         if dimmer.level > 0, PanelDim.cancels(previous: lastBuiltInBrightness, current: builtIn) {
             Log.xdr.info("dim cancelled: brightness raised to \(builtIn ?? -1)")
             dimmer.level = 0
-            dimRow?.update(value: 0)
         }
         lastBuiltInBrightness = builtIn
         refreshIcon()
@@ -162,6 +189,7 @@ final class App: NSObject, NSApplicationDelegate {
             if let v = entry.contrast { sliderRows[entry.info.id]?[.contrast]?.update(value: Double(v.current)) }
             if let b = entry.systemBrightness { systemBrightnessRows[entry.info.id]?.update(value: Double(b) * 100) }
         }
+        refreshBuiltInRow()
     }
 
     // MARK: - Menu

@@ -94,3 +94,18 @@ test enforces that ratio).
 `XDRController` is unchanged from the XDR branch (the `PanelGammaController`
 merge was reverted). Dim and XDR stay exclusive, handled in `App.setDim` and
 `toggleXDR`.
+
+## One slider (2026-09-26, requested)
+
+The Dim and Boost sliders are gone. The built-in panel has one Brightness
+slider (`BuiltInSlider`): Dim across the bottom fifth, macOS brightness from
+1/16 to full across the middle, and, with XDR Brightness on, the boost across
+the top fifth. The keys walk the same ladder (`BrightnessKeys.route` gains
+`.boost`: up past full with XDR on, four +25% steps). The XDR toggle stays.
+Its boost starts at 0 and drops to 0 whenever XDR goes off, so the toggle
+only extends the range. Dim and XDR are no longer exclusive: the slider can
+never ask for both, because a boost only counts at full brightness.
+
+Fixed on the way: the boost locked at the headroom seen at the first write
+(about 1.26×, because the headroom ramps from 1.0× to 5.0× over about 2.25 s),
+so the old Boost slider spanned 1.0–1.26×. The table now follows the headroom.

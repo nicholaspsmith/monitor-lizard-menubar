@@ -35,9 +35,15 @@ final class XDRController {
     private static let hdrPollInterval: TimeInterval = 0.5
     private static let hdrPollAttempts = 20
 
-    private(set) var isEnabled = false
-    /// 0…1 across the panel's usable headroom. In memory only, like `isEnabled`.
-    var boost: Float = 1 {
+    private(set) var isEnabled = false {
+        // The boost is the top of the Brightness slider, which only exists
+        // while XDR is on; switching off (by hand or on battery) lowers it.
+        didSet { if !isEnabled { boost = 0 } }
+    }
+    /// 0…1 across the panel's usable headroom: the top fifth of the built-in
+    /// Brightness slider. Starts at 0, so switching XDR on changes nothing
+    /// until the slider or the keys go past full. In memory only.
+    var boost: Float = 0 {
         didSet { update() }
     }
     var offOnBattery: Bool {
