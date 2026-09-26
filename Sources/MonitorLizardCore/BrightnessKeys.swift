@@ -67,9 +67,11 @@ public enum BrightnessKeys {
     }
 
     /// An external main display is stepped as before. On a built-in main
-    /// panel the keys belong to macOS until its brightness reaches 0; then down
-    /// starts dimming, and while dimmed both keys move the dim, so up walks
-    /// back out before macOS brightens again.
+    /// panel the keys belong to macOS down to its lowest lit step (1/16;
+    /// everything below it down to 0.0001 lights the panel the same 1 nit, and
+    /// 0 is the backlight off). There, down dims instead of switching the
+    /// panel off; while dimmed both keys move the dim; and up from off comes
+    /// back through the dim. `PanelDim.keyStep` says what each press does.
     public static func route(among displays: [Display], direction: Direction,
                              builtInBrightness: Float?, dimLevel: Float, dimAvailable: Bool) -> Route {
         if let id = target(among: displays) { return .external(id) }
@@ -77,7 +79,10 @@ public enum BrightnessKeys {
             return .passThrough
         }
         if dimLevel > 0 { return .dim(main.id) }
-        if direction == .down, let b = builtInBrightness, b <= 0.001 { return .dim(main.id) }
-        return .passThrough
+        guard let b = builtInBrightness else { return .passThrough }
+        switch direction {
+        case .down: return b > PanelDim.offBrightness && b <= PanelDim.lowestLitBrightness + 1e-4 ? .dim(main.id) : .passThrough
+        case .up: return b <= PanelDim.offBrightness ? .dim(main.id) : .passThrough
+        }
     }
 }

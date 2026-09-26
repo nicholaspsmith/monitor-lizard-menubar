@@ -22,6 +22,36 @@ public enum PanelDim {
     /// auto-brightness jitter.
     public static let cancelRise: Float = 0.05
 
+    /// macOS brightness at and below which the panel is off (backlight 0).
+    public static let offBrightness: Float = 0.001
+    /// macOS's lowest lit key step. Every brightness below it, down to
+    /// 0.0001, lights the panel the same (1 nit, measured on an M5 Pro).
+    public static let lowestLitBrightness: Float = 1.0 / 16
+
+    /// What one brightness key press does once it belongs to the dim:
+    /// the new dim level, and a macOS brightness to set, if any.
+    public struct KeyStep: Equatable {
+        public let level: Float
+        public let brightness: Float?
+        public init(level: Float, brightness: Float?) {
+            self.level = level
+            self.brightness = brightness
+        }
+    }
+
+    /// The ladder is macOS's lowest lit step, the eight dim steps, then off:
+    /// down from the deepest dim switches the panel off, and up from off comes
+    /// back at the deepest dim rather than at full 1/16.
+    public static func keyStep(level: Float, brightness: Float, direction: BrightnessKeys.Direction) -> KeyStep {
+        if direction == .up && brightness <= offBrightness {
+            return KeyStep(level: 1, brightness: lowestLitBrightness)
+        }
+        if direction == .down && level >= 1 {
+            return KeyStep(level: 0, brightness: 0)
+        }
+        return KeyStep(level: step(level, direction), brightness: nil)
+    }
+
     public static func factor(level: Float) -> Float {
         pow(minFactor, max(0, min(1, level)))
     }

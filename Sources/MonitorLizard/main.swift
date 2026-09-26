@@ -119,7 +119,17 @@ final class App: NSObject, NSApplicationDelegate {
 
     /// A brightness key press past macOS's minimum, or back.
     private func stepDim(_ direction: BrightnessKeys.Direction) {
-        panelGamma.dimLevel = PanelDim.step(panelGamma.dimLevel, direction)
+        guard let builtIn = model.entries.first(where: { $0.info.isBuiltIn }) else { return }
+        let brightness = model.liveSystemBrightness(builtIn.info.id) ?? 0
+        let next = PanelDim.keyStep(level: panelGamma.dimLevel, brightness: brightness, direction: direction)
+        if next.level > 0 { panelGamma.dimLevel = next.level }
+        if let b = next.brightness {
+            // Set before `lastBuiltInBrightness` sees it, so coming back from
+            // off doesn't read as someone raising the brightness.
+            lastBuiltInBrightness = b
+            model.setSystemBrightness(builtIn.info.id, b)
+        }
+        if next.level == 0 { panelGamma.dimLevel = 0 }
         dimRow?.update(value: Double(panelGamma.dimLevel) * 100)
     }
 
