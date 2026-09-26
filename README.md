@@ -2,8 +2,10 @@
 
 <p align="center"><img src="docs/mascot.png" width="160" alt="Monitor Lizard mascot, from the Menubarn widget library"></p>
 
-A small macOS menu-bar app that controls your **external monitor** from one
-dropdown: brightness, contrast, resolution and Night Shift. Nothing else.
+A small macOS menu-bar app that controls your **displays** from one dropdown:
+an external monitor's brightness, contrast and resolution, Night Shift, and
+the MacBook's own screen from dimmer than macOS allows to brighter than it
+allows (XDR).
 
 Part of the [Menubarn](https://widgets.nicksmith.software) widget library.
 
@@ -11,20 +13,25 @@ Part of the [Menubarn](https://widgets.nicksmith.software) widget library.
 
 <p align="center"><img src="docs/menu.png" width="450" alt="The Monitor Lizard menu: Brightness, Contrast and Resolution sliders for a Dell monitor over HDMI, a Night Shift toggle with a Warmth slider, Start at Login, Icon and Quit"></p>
 
+(The screenshot shows an external monitor; the built-in screen's section has
+its one Brightness slider and the XDR Brightness toggle.)
+
 One section per display, then Night Shift for the whole Mac:
 
 | Row | What it does |
 |-----|--------------|
-| **Brightness** | Sets the monitor's own backlight over DDC/CI, like pressing its front buttons. Also works for the built-in screen, and for displays macOS dims itself (TVs over HDMI, Apple and some USB-C monitors — the ones the keyboard brightness keys already work on). |
+| **Brightness** | Sets the monitor's own backlight over DDC/CI, like pressing its front buttons. Also works for displays macOS dims itself (TVs over HDMI, Apple and some USB-C monitors — the ones the keyboard brightness keys already work on). |
 | **Contrast** | Same, for contrast. |
 | **Resolution** | Drag through the sharp HiDPI "looks like" sizes. The `▸` submenu lists every mode. |
 | **Night Shift** | Toggle it, and set the warmth. |
-| **Brightness Keys** | The keyboard's brightness keys step the main monitor's brightness, sixteen steps across the range, by the same route as its Brightness row. Needs Accessibility once. |
+| **Brightness** (built-in screen) | One slider for the whole range. The bottom fifth is **Dim**, past the lowest brightness macOS offers. The middle is macOS's own range. With **XDR Brightness** on, the top fifth brightens past full. The brightness keys walk the same ladder. See below. |
+| **XDR Brightness** | Built-in XDR panel only: extends the Brightness slider and the brightness-up key past full, into the panel's HDR headroom. Off at every launch. See below. |
+| **Brightness Keys** | The keyboard's brightness keys step the main monitor's brightness, sixteen steps across the range, by the same route as its Brightness row. On the built-in screen they go on into Dim below macOS's lowest step, and into XDR above full. Needs Accessibility once. |
 | **✓ / ⏳ / ✗ line** | Whether Night Shift works on that display. See below. |
 
 Sliders apply live as you drag. Nothing is polled on a timer, and nothing you
 set is stored by the app: the monitor keeps its own brightness and macOS keeps
-the rest.
+the rest. Dim and XDR brightness are off again every time the app starts.
 
 ## Brightness keys
 
@@ -35,7 +42,12 @@ monitor's brightness instead and eats the key; the gecko flicks its tongue as
 the change lands. A monitor that refuses DDC but that macOS can dim itself is
 stepped through DisplayServices, the same route its Brightness row uses. When
 the main display is the built-in panel, or a monitor nothing can drive, the
-key passes through untouched and macOS does what it always did. Holding a key repeats. `Ctrl` + brightness is never touched, so
+key passes through untouched and macOS does what it always did, with one
+addition: at the built-in panel's lowest lit step, brightness-down **dims**
+it (below) instead of switching the screen off. After the deepest dim the
+next press switches it off, and brightness-up walks back the same way. With
+XDR Brightness on, brightness-up past full steps into the boost in four
++25% steps. Holding a key repeats. `Ctrl` + brightness is never touched, so
 [KeyLight](https://github.com/nicholaspsmith/keylight-menubar) still gets it
 for the keyboard backlight.
 
@@ -46,6 +58,56 @@ work without the two apps knowing about each other.
 An event tap needs **Accessibility**: grant it when prompted, or later from the
 menu's "⚠ Grant Accessibility…" row. The app is signed with the same stable
 local identity as the other Menubarn apps, so the grant survives rebuilds.
+
+## Dim
+
+On the built-in panel every brightness from macOS's lowest key step (1/16)
+down to just above zero lights the backlight the same 1 nit, and zero
+switches it off, so macOS has nothing dimmer to offer. **Dim** (under the
+built-in display, the bottom fifth of its Brightness slider) lays a
+click-through black overlay over the panel instead. The keys walk it in five
+steps that each let through about 20% less light than the one before: 81,
+66, 53, 43 and 35%. So every press is visibly darker, and the deepest step
+is still readable. The slider covers the same range smoothly, and its
+readout says "Dim 53%" and so on.
+
+The ladder on the brightness keys is macOS's steps down to 1/16, then the
+five dim steps, then off. Up from off comes back at the deepest dim.
+
+The overlay covers everything, menus and the menu bar included. It takes no
+clicks, follows you into every Space and full-screen app, and is left out of
+screenshots and recordings. The pointer stays at full brightness. It can't
+be left behind, because it goes when the app does. It is off every time the
+app starts. Raising the brightness another way, such as Control Center or auto-brightness
+in a brighter room, cancels it.
+
+A gamma table would be the usual way to do this, and it is how XDR
+brightness works. Scaled below 1, though, it changes nothing visible on this
+panel, in SDR or in HDR mode.
+
+## XDR brightness
+
+On a MacBook Pro with an XDR panel, **XDR Brightness** (under the built-in
+display) extends the built-in Brightness slider: its top fifth pushes the
+whole screen past the normal 500-nit ceiling, up to twice that, using the
+headroom the panel keeps for HDR. The readout says "XDR +50%" and so on. It
+works the way BrightIntosh does: a single pixel of HDR white in the panel's
+top-left corner switches it into HDR mode, and once the panel reports the
+headroom a gamma table lifts ordinary white into it. The headroom takes about
+two seconds to ramp up after HDR switches on, and it moves with brightness,
+so the table follows it rather than being set once.
+
+A leftover gamma table is what scrambles colours after wake with other apps,
+so Monitor Lizard only keeps one on the panel while it is safe: it is removed
+before sleep, when the displays go to sleep, on quit, whenever the display
+setup changes (lid closed, a monitor plugged in), and put back only once
+things have settled. After each removal the app reads the table back to make
+sure the boost is really gone. It is never applied to external displays, it
+is off again every time the app starts, and it switches itself off when you
+unplug. While on battery the menu shows "XDR Brightness · off on battery".
+
+Side effects: HDR video can clip its brightest highlights while it is on, and
+the panel draws more power and runs warmer.
 
 ## Why Night Shift may be off on your monitor
 
@@ -95,7 +157,14 @@ talking to one monitor at the same time interfere with each other.
 - **Brightness keys** come through a `CGEventTap` from
   [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit), bound to the two
   brightness media keys with no modifiers. They step the main display over
-  whichever route its Brightness row uses, DDC or DisplayServices.
+  whichever route its Brightness row uses, DDC or DisplayServices. On the
+  built-in panel they pass through to macOS down to 1/16, then drive Dim.
+- **Dim** is a borderless black `NSWindow` per built-in panel at
+  `.screenSaver` level, click-through, `sharingType = .none`, joining every
+  Space. Its opacity is `1 − 0.35^level`.
+- **XDR brightness** is a one-pixel EDR Metal window that puts the panel in
+  HDR mode, plus a transfer table (`CGSetDisplayTransferByTable`) that lifts
+  SDR white into the headroom.
 - **Night Shift** uses CoreBrightness.
 - **The "is this a TV?" flag** comes from CoreDisplay, the same source
   `system_profiler` reads.
@@ -103,7 +172,8 @@ talking to one monitor at the same time interfere with each other.
   `/Library/Displays/Contents/Resources/Overrides/DisplayVendorID-<hex>/DisplayProductID-<hex>`
   containing `DisplayIsTV = false`. macOS reads it when the display attaches.
 
-The app never touches gamma tables.
+Only XDR brightness touches a gamma table, and only the built-in panel's. It
+is removed before sleep, on quit and whenever the display setup changes.
 
 ## Develop
 

@@ -55,4 +55,43 @@ public enum BrightnessKeys {
         guard !main.isBuiltIn, main.source != .none else { return nil }
         return main.id
     }
+
+    /// Where a brightness key goes.
+    public enum Route: Equatable {
+        /// Step this external monitor.
+        case external(CGDirectDisplayID)
+        /// Dim this built-in panel below macOS's minimum, or undim it.
+        case dim(CGDirectDisplayID)
+        /// Step this built-in panel's XDR boost.
+        case boost(CGDirectDisplayID)
+        /// Leave the key to macOS.
+        case passThrough
+    }
+
+    /// An external main display is stepped as before. On a built-in main
+    /// panel the keys belong to macOS down to its lowest lit step (1/16;
+    /// everything below it down to 0.0001 lights the panel the same 1 nit, and
+    /// 0 is the backlight off). There, down dims instead of switching the
+    /// panel off; while dimmed both keys move the dim; and up from off comes
+    /// back through the dim. `PanelDim.keyStep` says what each press does.
+    /// With XDR brightness on, up past full brightness steps into the boost,
+    /// and while boosted both keys move it: the same ladder as the slider.
+    public static func route(among displays: [Display], direction: Direction,
+                             builtInBrightness: Float?, dimLevel: Float, dimAvailable: Bool,
+                             xdrEnabled: Bool = false, boost: Float = 0) -> Route {
+        if let id = target(among: displays) { return .external(id) }
+        guard dimAvailable, let main = displays.first(where: \.isMain) ?? displays.first, main.isBuiltIn else {
+            return .passThrough
+        }
+        if dimLevel > 0 { return .dim(main.id) }
+        guard let b = builtInBrightness else { return .passThrough }
+        if xdrEnabled {
+            if boost > 0 { return .boost(main.id) }
+            if direction == .up && b >= 0.999 { return .boost(main.id) }
+        }
+        switch direction {
+        case .down: return b > PanelDim.offBrightness && b <= PanelDim.lowestLitBrightness + 1e-4 ? .dim(main.id) : .passThrough
+        case .up: return b <= PanelDim.offBrightness ? .dim(main.id) : .passThrough
+        }
+    }
 }

@@ -216,6 +216,10 @@ final class DisplayModel {
         }
     }
 
+    /// DisplayServices brightness read now, not the cached value: a key press
+    /// right after macOS's own step can beat the change notification.
+    func liveSystemBrightness(_ id: CGDirectDisplayID) -> Float? { brightness.brightness(id) }
+
     func setSystemBrightness(_ id: CGDirectDisplayID, _ value: Float) {
         guard brightness.setBrightness(id, value), let i = entries.firstIndex(where: { $0.info.id == id }) else { return }
         entries[i].systemBrightness = value
