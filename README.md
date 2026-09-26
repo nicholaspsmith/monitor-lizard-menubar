@@ -147,7 +147,14 @@ talking to one monitor at the same time interfere with each other.
 - **Brightness keys** come through a `CGEventTap` from
   [HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit), bound to the two
   brightness media keys with no modifiers. They step the main display over
-  whichever route its Brightness row uses, DDC or DisplayServices.
+  whichever route its Brightness row uses, DDC or DisplayServices. On the
+  built-in panel they pass through to macOS down to 1/16, then drive Dim.
+- **Dim** is a borderless black `NSWindow` per built-in panel at
+  `.screenSaver` level, click-through, `sharingType = .none`, joining every
+  Space. Its opacity is `1 − 0.35^level`.
+- **XDR brightness** is a one-pixel EDR Metal window that puts the panel in
+  HDR mode, plus a transfer table (`CGSetDisplayTransferByTable`) that lifts
+  SDR white into the headroom.
 - **Night Shift** uses CoreBrightness.
 - **The "is this a TV?" flag** comes from CoreDisplay, the same source
   `system_profiler` reads.
@@ -155,7 +162,8 @@ talking to one monitor at the same time interfere with each other.
   `/Library/Displays/Contents/Resources/Overrides/DisplayVendorID-<hex>/DisplayProductID-<hex>`
   containing `DisplayIsTV = false`. macOS reads it when the display attaches.
 
-The app never touches gamma tables.
+Only XDR brightness touches a gamma table, and only the built-in panel's. It
+is removed before sleep, on quit and whenever the display setup changes.
 
 ## Develop
 
