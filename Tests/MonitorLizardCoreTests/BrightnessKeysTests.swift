@@ -70,8 +70,21 @@ final class BrightnessKeysTests: XCTestCase {
     // MARK: Routing, with dimming below macOS's minimum on the built-in panel
 
     private func route(_ displays: [BrightnessKeys.Display], _ d: BrightnessKeys.Direction,
-                       brightness: Float? = 0.5, dim: Float = 0, available: Bool = true) -> BrightnessKeys.Route {
-        BrightnessKeys.route(among: displays, direction: d, builtInBrightness: brightness, dimLevel: dim, dimAvailable: available)
+                       brightness: Float? = 0.5, dim: Float = 0, available: Bool = true,
+                       xdr: Bool = false, boost: Float = 0) -> BrightnessKeys.Route {
+        BrightnessKeys.route(among: displays, direction: d, builtInBrightness: brightness, dimLevel: dim, dimAvailable: available,
+                             xdrEnabled: xdr, boost: boost)
+    }
+
+    // With XDR on, up past full brightness steps into the boost, and while
+    // boosted both keys move the boost.
+    func testRouteIntoAndOutOfTheBoost() {
+        let ds = [display(2, main: true, builtIn: true, source: .system)]
+        XCTAssertEqual(route(ds, .up, brightness: 1, xdr: true), .boost(2))
+        XCTAssertEqual(route(ds, .up, brightness: 1, xdr: false), .passThrough)
+        XCTAssertEqual(route(ds, .up, brightness: 0.9375, xdr: true), .passThrough)
+        XCTAssertEqual(route(ds, .down, brightness: 1, xdr: true, boost: 0.25), .boost(2))
+        XCTAssertEqual(route(ds, .down, brightness: 1, xdr: true, boost: 0), .passThrough)
     }
 
     func testRouteExternalMainIsUnchanged() {

@@ -35,6 +35,7 @@ final class BrightnessKeyController {
     private let route: (BrightnessKeys.Direction) -> BrightnessKeys.Route
     private let stepExternal: (CGDirectDisplayID, BrightnessKeys.Direction) -> Void
     private let stepDim: (BrightnessKeys.Direction) -> Void
+    private let stepBoost: (BrightnessKeys.Direction) -> Void
 
     var isEnabled: Bool {
         didSet {
@@ -48,10 +49,12 @@ final class BrightnessKeyController {
 
     init(route: @escaping (BrightnessKeys.Direction) -> BrightnessKeys.Route,
          stepExternal: @escaping (CGDirectDisplayID, BrightnessKeys.Direction) -> Void,
-         stepDim: @escaping (BrightnessKeys.Direction) -> Void) {
+         stepDim: @escaping (BrightnessKeys.Direction) -> Void,
+         stepBoost: @escaping (BrightnessKeys.Direction) -> Void) {
         self.route = route
         self.stepExternal = stepExternal
         self.stepDim = stepDim
+        self.stepBoost = stepBoost
         // On by default: an absent key reads as enabled.
         isEnabled = UserDefaults.standard.object(forKey: Self.enabledKey) as? Bool ?? true
         var handler: ((String) -> Bool)!
@@ -107,6 +110,7 @@ final class BrightnessKeyController {
         switch route(direction) {
         case .external(let id): stepExternal(id, direction)
         case .dim: stepDim(direction)
+        case .boost: stepBoost(direction)
         case .passThrough: return false
         }
         return true

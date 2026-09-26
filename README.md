@@ -19,8 +19,8 @@ One section per display, then Night Shift for the whole Mac:
 | **Contrast** | Same, for contrast. |
 | **Resolution** | Drag through the sharp HiDPI "looks like" sizes. The `▸` submenu lists every mode. |
 | **Night Shift** | Toggle it, and set the warmth. |
-| **Dim** | Built-in panel only: dims it past its lowest lit brightness in five steps, down to about a third. The brightness-down key gets there too. Off at every launch. See below. |
-| **XDR Brightness** | Built-in XDR panel only: brightens it past its normal maximum. Off at every launch. See below. |
+| **Brightness** (built-in screen) | One slider for the whole range. The bottom fifth is **Dim**, past the lowest brightness macOS offers. The middle is macOS's own range. With **XDR Brightness** on, the top fifth brightens past full. The brightness keys walk the same ladder. See below. |
+| **XDR Brightness** | Built-in XDR panel only: extends the Brightness slider and the brightness-up key past full, into the panel's HDR headroom. Off at every launch. See below. |
 | **Brightness Keys** | The keyboard's brightness keys step the main monitor's brightness, sixteen steps across the range, by the same route as its Brightness row. Needs Accessibility once. |
 | **✓ / ⏳ / ✗ line** | Whether Night Shift works on that display. See below. |
 
@@ -40,7 +40,9 @@ the main display is the built-in panel, or a monitor nothing can drive, the
 key passes through untouched and macOS does what it always did, with one
 addition: at the built-in panel's lowest lit step, brightness-down **dims**
 it (below) instead of switching the screen off. After the deepest dim the
-next press switches it off, and brightness-up walks back the same way. Holding a key repeats. `Ctrl` + brightness is never touched, so
+next press switches it off, and brightness-up walks back the same way. With
+XDR Brightness on, brightness-up past full steps into the boost in four
++25% steps. Holding a key repeats. `Ctrl` + brightness is never touched, so
 [KeyLight](https://github.com/nicholaspsmith/keylight-menubar) still gets it
 for the keyboard backlight.
 
@@ -57,11 +59,12 @@ local identity as the other Menubarn apps, so the grant survives rebuilds.
 On the built-in panel every brightness from macOS's lowest key step (1/16)
 down to just above zero lights the backlight the same 1 nit, and zero
 switches it off, so macOS has nothing dimmer to offer. **Dim** (under the
-built-in display) lays a click-through black overlay over the panel instead.
-The keys walk it in five steps that each let through about 20% less light
-than the one before: 81, 66, 53, 43 and 35%. So every press is visibly
-darker, and the deepest step is still readable. The slider covers the same
-range smoothly.
+built-in display, the bottom fifth of its Brightness slider) lays a
+click-through black overlay over the panel instead. The keys walk it in five
+steps that each let through about 20% less light than the one before: 81,
+66, 53, 43 and 35%. So every press is visibly darker, and the deepest step
+is still readable. The slider covers the same range smoothly, and its
+readout says "Dim 53%" and so on.
 
 The ladder on the brightness keys is macOS's steps down to 1/16, then the
 five dim steps, then off. Up from off comes back at the deepest dim.
@@ -70,8 +73,7 @@ The overlay covers everything, menus and the menu bar included. It takes no
 clicks, follows you into every Space and full-screen app, and is left out of
 screenshots and recordings. The pointer stays at full brightness. It can't
 be left behind, because it goes when the app does. It is off every time the
-app starts. It turns XDR brightness off, and turning XDR on clears it.
-Raising the brightness another way, such as Control Center or auto-brightness
+app starts. Raising the brightness another way, such as Control Center or auto-brightness
 in a brighter room, cancels it.
 
 A gamma table would be the usual way to do this, and it is how XDR
@@ -81,11 +83,14 @@ panel, in SDR or in HDR mode.
 ## XDR brightness
 
 On a MacBook Pro with an XDR panel, **XDR Brightness** (under the built-in
-display) pushes the whole screen past the normal 500-nit ceiling, up to twice
-that, using the headroom the panel keeps for HDR. **Boost** sets how far. It
+display) extends the built-in Brightness slider: its top fifth pushes the
+whole screen past the normal 500-nit ceiling, up to twice that, using the
+headroom the panel keeps for HDR. The readout says "XDR +50%" and so on. It
 works the way BrightIntosh does: a single pixel of HDR white in the panel's
 top-left corner switches it into HDR mode, and once the panel reports the
-headroom a gamma table lifts ordinary white into it.
+headroom a gamma table lifts ordinary white into it. The headroom takes about
+two seconds to ramp up after HDR switches on, and it moves with brightness,
+so the table follows it rather than being set once.
 
 A leftover gamma table is what scrambles colours after wake with other apps,
 so Monitor Lizard only keeps one on the panel while it is safe: it is removed

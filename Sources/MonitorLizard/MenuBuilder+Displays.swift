@@ -19,6 +19,8 @@ extension App {
         menu.addItem(header)
 
         switch entry.brightnessSource {
+        case .system where entry.info.isBuiltIn:
+            addBuiltInBrightnessRow(entry, to: menu)
         case .system:
             // The built-in panel, or an external display macOS dims itself
             // (the keyboard keys work on it even when DDC doesn't).
@@ -45,7 +47,6 @@ extension App {
             break
         }
         if entry.info.isBuiltIn {
-            addDimRow(to: menu)
             addXDRRows(entry, to: menu)
             return
         }
@@ -94,17 +95,22 @@ extension App {
         menu.addItem(ns)
     }
 
-    /// Dim: below macOS's lowest brightness. The keys reach it too, once
-    /// macOS's brightness is at 0.
-    private func addDimRow(to menu: NSMenu) {
+    /// The built-in panel's one Brightness slider: Dim along the bottom
+    /// fifth, macOS's range in the middle, and the XDR boost along the top
+    /// fifth while XDR Brightness is on (`BuiltInSlider`).
+    private func addBuiltInBrightnessRow(_ entry: DisplayModel.Entry, to menu: NSMenu) {
+        let xdrOn = xdr.isEnabled
         let row = NSMenuItem()
-        let view = SliderRow(title: "Dim", symbol: "moon", value: Double(dimmer.level) * 100, maximum: 100,
-                             format: { PanelDim.label(level: Float($0 / 100)) }) { [weak self] v in
-            self?.setDim(Float(v / 100))
+        let position = builtInLevel().map { BuiltInSlider.position($0, xdr: xdrOn) * 100 }
+        let view = SliderRow(title: "Brightness", symbol: "sun.max", value: entry.systemBrightness == nil ? nil : position, maximum: 100,
+                             format: { BuiltInSlider.label(BuiltInSlider.level(at: $0 / 100, xdr: xdrOn)) }) { [weak self] v in
+            self?.setBuiltIn(position: v / 100)
         }
-        view.toolTip = "Dims the screen past its lowest brightness. Past the lowest brightness, the brightness-down key keeps going here. Off again at every launch."
+        view.toolTip = xdrOn
+            ? "The bottom of the slider dims past the lowest brightness; the top brightens past full using the panel's HDR headroom."
+            : "The bottom of the slider dims past the lowest brightness. Turn on XDR Brightness to brighten past full."
         row.view = view
-        dimRow = view
+        builtInRow = view
         menu.addItem(row)
     }
 
@@ -120,17 +126,8 @@ extension App {
             toggle.target = self
             toggle.state = xdr.isEnabled ? .on : .off
         }
-        toggle.toolTip = "Brightens the panel past its normal maximum using its HDR headroom. Off again at every launch."
+        toggle.toolTip = "Extends the Brightness slider (and the brightness-up key) past full, into the panel's HDR headroom. Off again at every launch."
         menu.addItem(toggle)
-
-        if xdr.isEnabled {
-            let boost = NSMenuItem()
-            boost.view = SliderRow(title: "Boost", symbol: "sun.max.fill", value: Double(xdr.boost) * 100, maximum: 100,
-                                   format: { "\(Int($0.rounded()))" }) { [weak self] v in
-                self?.xdr.boost = Float(v / 100)
-            }
-            menu.addItem(boost)
-        }
 
         let battery = NSMenuItem(title: "Off on Battery", action: #selector(toggleXDROffOnBattery), keyEquivalent: "")
         battery.target = self
@@ -144,13 +141,7 @@ extension App {
         menu.addItem(note)
     }
 
-    @objc func toggleXDR() {
-        xdr.setEnabled(!xdr.isEnabled)
-        if xdr.isEnabled {
-            dimmer.level = 0
-            dimRow?.update(value: 0)
-        }
-    }
+    @objc func toggleXDR() { xdr.setEnabled(!xdr.isEnabled) }
     @objc func toggleXDROffOnBattery() { xdr.offOnBattery.toggle() }
 
     private func headerTitle(_ name: String, tag: String) -> NSAttributedString {
