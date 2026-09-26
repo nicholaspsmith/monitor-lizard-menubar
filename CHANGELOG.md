@@ -1,9 +1,11 @@
 # Changelog
 
-Every push to `main` is a release. Add a `## [X.Y.Z] - YYYY-MM-DD` section at
-the top (minor for features, patch for fixes); GitHub tags it and publishes
-the section as the release notes. Versions follow [Semantic
-Versioning](https://semver.org/).
+Every push to `main` is a release. Before pushing, add a `## [X.Y.Z] - YYYY-MM-DD`
+section at the top with `- ` entries (minor for features, patch for fixes); if an
+`## [Unreleased]` section is waiting, turn it into that section. GitHub tags it
+and publishes the section as the release notes; a push without one is refused.
+Versions follow [Semantic Versioning](https://semver.org/). The full rule:
+[StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
 ## [Unreleased]
 
@@ -11,61 +13,49 @@ Versioning](https://semver.org/).
 
 ## [1.2.0] - 2026-09-26
 
-- docs: README introduces the built-in screen's dim and XDR range
-- menu: drop the Off on Battery row and the XDR side-effects note
-- feat: one Brightness slider for the built-in screen
-- fix: XDR boost follows the panel's headroom as it ramps
-- docs: README covers how Dim and XDR brightness work
-- fix: dim with a click-through overlay; five distinct steps
-- fix: dim from the lowest lit brightness, not from 0 (the panel off)
-- feat: dim the built-in panel below macOS's lowest brightness
-- app: XDR engages HDR with a one-pixel overlay and waits for the headroom
-- feat: XDR brightness drives the built-in panel past the SDR cap
+### The MacBook screen, dimmer and brighter than macOS allows
+
+The built-in screen gets **one Brightness slider** for its whole range:
+- **Bottom fifth: Dim.** Below macOS's lowest lit step (1/16), a click-through black overlay dims the screen in five steps. Each lets through about 20% less light than the last: 81, 66, 53, 43 and 35%.
+- **Middle: macOS's own range,** 1/16 to full.
+- **Top fifth: XDR boost,** up to 2× past full, while **XDR Brightness** is on.
+
+The **brightness keys** walk the same ladder: off ↔ the five dim steps ↔ macOS's steps ↔ four +25% boost steps with XDR on. Brightness-down at 1/16 dims instead of switching the screen off.
+
+#### Dim
+- On this panel, every macOS brightness from 1/16 down to 0.0001 is the same 1-nit backlight, and 0 is off, so macOS has nothing dimmer to offer.
+- A gamma table scaled below 1 does nothing visible on the panel, in SDR or in HDR mode, so Dim is an overlay. It covers menus and the menu bar, takes no clicks, joins every Space and full-screen app, is left out of screenshots and recordings, and disappears when the app quits.
+- Raising brightness another way (Control Center, auto-brightness in a brighter room) cancels it. Off at every launch.
+
+#### XDR Brightness
+- A one-pixel EDR overlay switches the panel into HDR mode, and a transfer table lifts SDR white into its headroom, capped at 2× (about 1000 nits).
+- The table follows the headroom as it ramps up after HDR engages (1.0× to 5.0× over about 2 seconds) and as brightness changes.
+- The table is removed before sleep and display sleep, on quit and whenever the display setup changes, then read back to confirm. It only ever touches the built-in panel.
+- Off at every launch, and off on battery.
+
+Merged in #7. Design notes: `docs/superpowers/specs/2026-09-26-built-in-dim-design.md`.
 
 ## [1.1.0] - 2026-09-23
 
-- app: the brightness keys take the DisplayServices route where DDC has refused
-- core: note that DisplayServicesBrightnessChanged is gone since macOS 15.6
-- app: keep the DisplayServices brightness slider live while the menu is open
-- app: fall back to DisplayServices brightness on external displays that refuse DDC
+### Brightness where DDC refuses
+- External displays that refuse DDC (TVs over HDMI, typically) fall back to DisplayServices brightness when macOS can dim them itself.
+- The brightness keys take the same route, so they work on those displays too.
+- The DisplayServices brightness slider stays live while the menu is open.
+
+Merged in #5.
 
 ## [1.0.0] - 2026-09-23
 
-- feat: the menu shows the version it was built from
-- feat: the keyboard's brightness keys step the main monitor over DDC
-- LICENSE: name the copyright holder above the MPL text
-- License: Mozilla Public License 2.0
-- docs: regenerated icon strip and caption for the redrawn gecko glyph
-- docs: rewrite README around the menu capture and icon strip
-- app: follow built-in brightness changes via DisplayServices notifications
-- app: fix stale DDC completions, sticky ddcUnavailable, slider failure UX
-- core: fix Night Shift enabled/active field, guard private selectors
-- docs: mascot, menu-bar strip, app icon
-- docs+scripts: installer, icon builder, README
-- app: fix icon refresh on menu close and TV-fix reentrancy
-- app: status item, lizard glyph, display menu, Night Shift auto-fix
-- app: admin-prompt override writer for TV-flagged displays
-- app: fix resolution row apply gating, off-plan label and native match
-- app: slider rows and the stepped resolution row with picker submenu
-- app: fix DDC write failures marking displays unavailable
-- app: DisplayModel orchestrates enumeration, DDC reads/writes and modes
-- core: fix unclamped Night Shift/brightness change notification
-- core: DisplayServices brightness and CBBlueLightClient Night Shift backends
-- core: TV-role state machine and override plist
-- core: validate stale mode indices in DisplayModes.apply and log failures
-- core: HiDPI mode planner with the Dell's mode list as fixture
-- core: fix IOKit handle leak in IORegistryScanner
-- core: IORegistry scanner for framebuffers and external AV services
-- core: fix DisplayInfo product-name locale selection
-- core: DisplayInfo from CoreDisplay and the display/AV-service matcher
-- core: fix IOAVService buffer safety and add validation tests
-- core: IOAVService-backed DDC transport
-- core: DDCService sleeps on every failure exit and covers the pop-vs-write race
-- core: DDCService with serial queue, retries and latest-wins writes
-- core: DDC/CI packet codec with vectors from the Dell
-- build: package scaffold with core, app and test targets
-- build: ignore SDD workspace
-- docs: implementation plan
-- docs: rollout gated on a one-week soak before removing BetterDisplay
-- docs: spec self-review fixes (aspect filter, slider range)
-- docs: Monitor Lizard design spec
+The first release of Monitor Lizard, a menu-bar app for external displays. It replaces BetterDisplay for this Mac's everyday needs.
+
+### Features
+- **Brightness and contrast over DDC/CI** through `IOAVService`, one serial queue per display, every read checksum-confirmed, latest-wins writes.
+- **Resolution:** a stepped slider through the sharp HiDPI "looks like" sizes, with a submenu of every mode.
+- **Built-in screen brightness** through DisplayServices, following changes made anywhere.
+- **Night Shift** toggle and warmth slider.
+- **TV-flag fix:** a display macOS wrongly calls a television (which blocks Night Shift) gets a display override plist, written with an admin prompt.
+- **Brightness keys** step the main external monitor over DDC; on the built-in screen they pass through to macOS. Needs Accessibility once.
+- **Menu-bar icon:** a gecko on a monitor whose screen shows brightness, amber for Night Shift, and a tongue flick when a change lands.
+- The menu shows the version it was built from.
+
+Licensed under the Mozilla Public License 2.0.

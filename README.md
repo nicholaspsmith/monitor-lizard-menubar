@@ -188,20 +188,19 @@ log show --last 5m --predicate 'subsystem == "com.nicholaspsmith.MonitorLizard"'
 
 ### Releasing
 
-Versions are semantic (`vMAJOR.MINOR.PATCH`), cut from `main` at the merge
-commit of the feature's pull request, and every tag gets a
-[GitHub Release](https://github.com/nicholaspsmith/monitor-lizard-menubar/releases) whose
-notes are the changelog: what changed for someone using the app, plus a
-"Full changelog" compare link. There is no CHANGELOG file; the releases are it.
-
-```sh
-git tag -a vX.Y.Z -m "X.Y.Z" && git push origin vX.Y.Z
-gh release create vX.Y.Z --verify-tag --title "Monitor Lizard X.Y.Z" --notes-file notes.md
-```
-
-The app stamps its version from the latest tag at build time (the menu's
-Version row), so rebuild after tagging. Update the version line at the top of
-this README with each release.
+Every push to `main` is a release. Before pushing, add a dated
+`## [X.Y.Z] - YYYY-MM-DD` section to the top of [`CHANGELOG.md`](CHANGELOG.md)
+(minor for features, patch for fixes; turn a waiting `## [Unreleased]` into it):
+what changed for someone using the app. When it reaches `main`, GitHub tags
+`vX.Y.Z` and publishes that section as the
+[GitHub Release](https://github.com/nicholaspsmith/monitor-lizard-menubar/releases); a push
+without a new version is refused, locally by a `pre-push` hook and again by the
+release workflow. Don't tag by hand. After merging, `git pull` for the tag and
+rebuild (the menu's Version row is stamped from it), and update the version
+line at the top of this README. `[no release]` in the tip commit's message is
+the escape hatch for pushes that change nothing a user runs. `install.sh` arms
+the hook; see [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one)
+for the whole rule.
 
 ## Why not a SwiftBar plugin?
 
