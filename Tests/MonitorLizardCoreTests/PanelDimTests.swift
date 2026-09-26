@@ -8,34 +8,36 @@ import XCTest
 @testable import MonitorLizardCore
 
 final class PanelDimTests: XCTestCase {
-    func testFactorRunsFromNormalToTenPercent() {
+    func testFactorRunsFromNormalToThirtyFivePercent() {
         XCTAssertEqual(PanelDim.factor(level: 0), 1)
-        XCTAssertEqual(PanelDim.factor(level: 1), 0.1, accuracy: 1e-6)
-        XCTAssertEqual(PanelDim.factor(level: 0.5), 0.3162, accuracy: 1e-4)
-        XCTAssertEqual(PanelDim.factor(level: 2), 0.1, accuracy: 1e-6, "clamped")
+        XCTAssertEqual(PanelDim.factor(level: 1), 0.35, accuracy: 1e-6)
+        XCTAssertEqual(PanelDim.factor(level: 0.5), 0.5916, accuracy: 1e-4)
+        XCTAssertEqual(PanelDim.factor(level: 2), 0.35, accuracy: 1e-6, "clamped")
         XCTAssertEqual(PanelDim.factor(level: -1), 1, "clamped")
     }
 
-    func testKeysWalkEightSteps() {
+    func testKeysWalkFiveDistinctSteps() {
         var level: Float = 0
         var factors: [Int] = []
-        for _ in 0..<10 { level = PanelDim.step(level, .down); factors.append(Int((PanelDim.factor(level: level) * 100).rounded())) }
-        XCTAssertEqual(factors, [75, 56, 42, 32, 24, 18, 13, 10, 10, 10])
-        for _ in 0..<8 { level = PanelDim.step(level, .up) }
+        for _ in 0..<7 { level = PanelDim.step(level, .down); factors.append(Int((PanelDim.factor(level: level) * 100).rounded())) }
+        XCTAssertEqual(factors, [81, 66, 53, 43, 35, 35, 35])
+        // Every step lets through at most ~81% of the one above: visibly darker.
+        for (a, b) in zip([100] + factors.prefix(5), factors.prefix(5)) { XCTAssertLessThanOrEqual(Double(b) / Double(a), 0.82) }
+        for _ in 0..<5 { level = PanelDim.step(level, .up) }
         XCTAssertEqual(level, 0)
         XCTAssertEqual(PanelDim.step(0, .up), 0)
     }
 
     func testStepsSnapFromASliderValue() {
-        XCTAssertEqual(PanelDim.step(0.3, .down), 3 / 8)
-        XCTAssertEqual(PanelDim.step(0.3, .up), 2 / 8)
-        XCTAssertEqual(PanelDim.step(Float(3) / 8, .down), 4 / 8, "on a step: the next one")
+        XCTAssertEqual(PanelDim.step(0.3, .down), 2 / 5)
+        XCTAssertEqual(PanelDim.step(0.3, .up), 1 / 5)
+        XCTAssertEqual(PanelDim.step(Float(2) / 5, .down), 3 / 5, "on a step: the next one")
     }
 
     func testLabel() {
         XCTAssertEqual(PanelDim.label(level: 0), "Off")
-        XCTAssertEqual(PanelDim.label(level: 1), "10%")
-        XCTAssertEqual(PanelDim.label(level: 0.125), "75%")
+        XCTAssertEqual(PanelDim.label(level: 1), "35%")
+        XCTAssertEqual(PanelDim.label(level: 0.2), "81%")
     }
 
     func testRaisingBrightnessCancels() {
@@ -45,26 +47,12 @@ final class PanelDimTests: XCTestCase {
         XCTAssertFalse(PanelDim.cancels(previous: nil, current: 0.5))
     }
 
-    func testTablePolicy() {
-        func mode(xdr: Bool = false, dim: Float = 0, asleep: Bool = false, settling: Bool = false, battery: Bool = false) -> PanelTableMode {
-            PanelTablePolicy.mode(xdrEnabled: xdr, dimLevel: dim, asleep: asleep, settling: settling, onBattery: battery, offOnBattery: true)
-        }
-        XCTAssertEqual(mode(), .none)
-        XCTAssertEqual(mode(xdr: true), .boost)
-        XCTAssertEqual(mode(dim: 1), .dim(PanelDim.factor(level: 1)))
-        XCTAssertEqual(mode(xdr: true, dim: 0.5), .dim(PanelDim.factor(level: 0.5)), "dim wins")
-        XCTAssertEqual(mode(dim: 1, asleep: true), .none)
-        XCTAssertEqual(mode(dim: 1, settling: true), .none)
-        XCTAssertEqual(mode(dim: 1, battery: true), .dim(PanelDim.factor(level: 1)), "the battery rule is XDR's")
-        XCTAssertEqual(mode(xdr: true, battery: true), .none)
-    }
-
     // One key press: the ladder is 1/16 → eight dim steps → off, and back.
     func testKeyStepWalksTheLadder() {
-        XCTAssertEqual(PanelDim.keyStep(level: 0, brightness: 0.0625, direction: .down), PanelDim.KeyStep(level: 0.125, brightness: nil))
-        XCTAssertEqual(PanelDim.keyStep(level: 0.5, brightness: 0.0625, direction: .up), PanelDim.KeyStep(level: 0.375, brightness: nil))
+        XCTAssertEqual(PanelDim.keyStep(level: 0, brightness: 0.0625, direction: .down), PanelDim.KeyStep(level: 0.2, brightness: nil))
+        XCTAssertEqual(PanelDim.keyStep(level: 0.6, brightness: 0.0625, direction: .up), PanelDim.KeyStep(level: 0.4, brightness: nil))
         XCTAssertEqual(PanelDim.keyStep(level: 1, brightness: 0.0625, direction: .down), PanelDim.KeyStep(level: 0, brightness: 0), "deepest, then off")
         XCTAssertEqual(PanelDim.keyStep(level: 0, brightness: 0, direction: .up), PanelDim.KeyStep(level: 1, brightness: 0.0625), "off, then deepest")
-        XCTAssertEqual(PanelDim.keyStep(level: 0.125, brightness: 0.0625, direction: .up), PanelDim.KeyStep(level: 0, brightness: nil), "out of the dim; macOS takes the next press")
+        XCTAssertEqual(PanelDim.keyStep(level: 0.2, brightness: 0.0625, direction: .up), PanelDim.KeyStep(level: 0, brightness: nil), "out of the dim; macOS takes the next press")
     }
 }

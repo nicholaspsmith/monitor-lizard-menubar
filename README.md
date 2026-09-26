@@ -19,7 +19,7 @@ One section per display, then Night Shift for the whole Mac:
 | **Contrast** | Same, for contrast. |
 | **Resolution** | Drag through the sharp HiDPI "looks like" sizes. The `▸` submenu lists every mode. |
 | **Night Shift** | Toggle it, and set the warmth. |
-| **Dim** | Built-in panel only: dims it past its lowest brightness, down to a tenth of it. The brightness-down key gets there too. Off at every launch. See below. |
+| **Dim** | Built-in panel only: dims it past its lowest lit brightness in five steps, down to about a third. The brightness-down key gets there too. Off at every launch. See below. |
 | **XDR Brightness** | Built-in XDR panel only: brightens it past its normal maximum. Off at every launch. See below. |
 | **Brightness Keys** | The keyboard's brightness keys step the main monitor's brightness, sixteen steps across the range, by the same route as its Brightness row. Needs Accessibility once. |
 | **✓ / ⏳ / ✗ line** | Whether Night Shift works on that display. See below. |
@@ -38,9 +38,9 @@ the change lands. A monitor that refuses DDC but that macOS can dim itself is
 stepped through DisplayServices, the same route its Brightness row uses. When
 the main display is the built-in panel, or a monitor nothing can drive, the
 key passes through untouched and macOS does what it always did, with one
-addition: once the built-in panel is at macOS's lowest brightness, further
-presses of brightness-down **dim** it (below), and brightness-up walks back
-out of the dim before macOS brightens again. Holding a key repeats. `Ctrl` + brightness is never touched, so
+addition: at the built-in panel's lowest lit step, brightness-down **dims**
+it (below) instead of switching the screen off. After the deepest dim the
+next press switches it off, and brightness-up walks back the same way. Holding a key repeats. `Ctrl` + brightness is never touched, so
 [KeyLight](https://github.com/nicholaspsmith/keylight-menubar) still gets it
 for the keyboard backlight.
 
@@ -54,22 +54,29 @@ local identity as the other Menubarn apps, so the grant survives rebuilds.
 
 ## Dim
 
-At macOS's lowest brightness the built-in panel's backlight is already at its
-minimum, and it is still bright in a dark room. **Dim** (under the built-in
-display) goes further by scaling the panel's gamma table down, so everything
-lit gets darker. Eight key presses past zero take it to 75, 56, 42, 32, 24,
-18, 13 and finally 10% of macOS's minimum; the slider covers the same range
-smoothly.
+On the built-in panel every brightness from macOS's lowest key step (1/16)
+down to just above zero lights the backlight the same 1 nit, and zero
+switches it off, so macOS has nothing dimmer to offer. **Dim** (under the
+built-in display) lays a click-through black overlay over the panel instead.
+The keys walk it in five steps that each let through about 20% less light
+than the one before: 81, 66, 53, 43 and 35%. So every press is visibly
+darker, and the deepest step is still readable. The slider covers the same
+range smoothly.
 
-It is the XDR boost's gamma table turned the other way, so it follows the
-same safety rules below: removed before sleep, display sleep, on quit and
-while the display setup changes, checked after removal, and off again every
-time the app starts. It replaces XDR brightness while on (the two can't be on
-at once). Raising the brightness another way, such as Control Center or
-auto-brightness in a brighter room, cancels it.
+The ladder on the brightness keys is macOS's steps down to 1/16, then the
+five dim steps, then off. Up from off comes back at the deepest dim.
 
-Blacks stay as they are, because the backlight is not dimmed any further,
-and screenshots and recordings are not dimmed.
+The overlay covers everything, menus and the menu bar included. It takes no
+clicks, follows you into every Space and full-screen app, and is left out of
+screenshots and recordings. The pointer stays at full brightness. It can't
+be left behind, because it goes when the app does. It is off every time the
+app starts. It turns XDR brightness off, and turning XDR on clears it.
+Raising the brightness another way, such as Control Center or auto-brightness
+in a brighter room, cancels it.
+
+A gamma table would be the usual way to do this, and it is how XDR
+brightness works. Scaled below 1, though, it changes nothing visible on this
+panel, in SDR or in HDR mode.
 
 ## XDR brightness
 
