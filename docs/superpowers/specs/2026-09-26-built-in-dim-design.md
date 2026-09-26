@@ -1,7 +1,9 @@
 # Dim the built-in panel below macOS's minimum
 
 **Date:** 2026-09-26
-**Status:** approved in chat ("implement it for the built-in MacBook screen")
+**Status:** approved in chat ("implement it for the built-in MacBook screen");
+revised the same day after testing by eye. See "Revision" at the end. The
+sections above it describe the first version.
 
 ## Goal
 
@@ -62,3 +64,33 @@ percentage of normal. The keys move it while the menu is open.
 Unit: dim levels, key routing, table policy. Live: the table is written,
 scaled and cleared (read back via `CGGetDisplayTransferByTable`); the user
 checks the look.
+
+## Revision (tested by eye, 2026-09-26)
+
+The first version turned the screen off at every step. Two separate causes:
+
+1. **Brightness 0 is the backlight off.** The panel driver's
+   `IOMFBBrightnessLevel` (16.16 nits) reads 1.0 for every macOS brightness
+   from 1/16 down to 0.0001, and 0 at brightness 0. The keys started dimming
+   at 0, a screen already dark. Now they start at the lowest lit step,
+   **1/16**. The ladder is 1/16, then the dim steps, then off, and up from
+   off comes back at the deepest dim (`PanelDim.keyStep`).
+2. **A transfer table below 1 does nothing visible on this panel,** in SDR,
+   and in HDR mode (engaged with the XDR overlay, headroom 1.21), though
+   macOS accepts and reads it back. 256- and 1024-entry tables behave
+   the same.
+
+What shipped instead: `DimOverlayController`, a click-through black window
+over each built-in panel at `.screenSaver` level, `sharingType = .none`,
+joining all Spaces and full-screen apps, refitted on screen-parameter
+changes. The lifecycle is simpler than the table's: an overlay dies with
+the process, and sleep can't strand it.
+
+By eye at 1/16: 50% darker reads fine, 75% barely, 90% not at all. So there
+are **5 steps** of `0.35^level`: 81, 66, 53, 43 and 35% of the light, each at
+most 82% of the one above, so every key press is visibly different (a unit
+test enforces that ratio).
+
+`XDRController` is unchanged from the XDR branch (the `PanelGammaController`
+merge was reverted). Dim and XDR stay exclusive, handled in `App.setDim` and
+`toggleXDR`.

@@ -28,9 +28,11 @@ final class App: NSObject, NSApplicationDelegate {
     var systemBrightnessRows: [CGDirectDisplayID: SliderRow] = [:]
     private var fixInProgress = false
     private var brightnessKeys: BrightnessKeyController!
-    /// The built-in panel's transfer table: XDR brightness or dim. Both off at
-    /// every launch.
-    let panelGamma = PanelGammaController()
+    /// XDR brightness for the built-in panel; off at every launch.
+    let xdr = XDRController()
+    /// Dimming the built-in panel below macOS's lowest lit brightness; off at
+    /// every launch. Exclusive with XDR.
+    let dimmer = DimOverlayController()
     /// The open menu's Dim row, so the keys move it.
     weak var dimRow: SliderRow?
     /// The built-in panel's last macOS brightness, to notice it being raised.
@@ -80,21 +82,23 @@ final class App: NSObject, NSApplicationDelegate {
                     },
                     direction: direction,
                     builtInBrightness: builtIn.flatMap { self.model.liveSystemBrightness($0.info.id) },
-                    dimLevel: self.panelGamma.dimLevel,
-                    dimAvailable: self.panelGamma.isDimAvailable
+                    dimLevel: self.dimmer.level,
+                    dimAvailable: self.dimmer.isAvailable
                 )
             },
             stepExternal: { [weak self] id, direction in self?.model.stepBrightness(id, direction) },
             stepDim: { [weak self] direction in self?.stepDim(direction) }
         )
         brightnessKeys.start()
-        panelGamma.start()
+        xdr.start()
+        dimmer.start()
         lastBuiltInBrightness = model.entries.first { $0.info.isBuiltIn }?.systemBrightness
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        // Neither the boost's nor the dim's transfer table may outlive the app.
-        panelGamma.stop()
+        // The boost's transfer table must never outlive the app.
+        xdr.stop()
+        dimmer.stop()
     }
 
     // MARK: - Icon
@@ -121,25 +125,32 @@ final class App: NSObject, NSApplicationDelegate {
     private func stepDim(_ direction: BrightnessKeys.Direction) {
         guard let builtIn = model.entries.first(where: { $0.info.isBuiltIn }) else { return }
         let brightness = model.liveSystemBrightness(builtIn.info.id) ?? 0
-        let next = PanelDim.keyStep(level: panelGamma.dimLevel, brightness: brightness, direction: direction)
-        if next.level > 0 { panelGamma.dimLevel = next.level }
+        let next = PanelDim.keyStep(level: dimmer.level, brightness: brightness, direction: direction)
+        if next.level > 0 { setDim(next.level) }
         if let b = next.brightness {
             // Set before `lastBuiltInBrightness` sees it, so coming back from
             // off doesn't read as someone raising the brightness.
             lastBuiltInBrightness = b
             model.setSystemBrightness(builtIn.info.id, b)
         }
-        if next.level == 0 { panelGamma.dimLevel = 0 }
-        dimRow?.update(value: Double(panelGamma.dimLevel) * 100)
+        if next.level == 0 { setDim(0) }
+        dimRow?.update(value: Double(dimmer.level) * 100)
+    }
+
+    /// Dim and XDR brightness are opposite ends of the range: dimming turns
+    /// XDR off.
+    func setDim(_ level: Float) {
+        if level > 0 && xdr.isEnabled { xdr.setEnabled(false) }
+        dimmer.level = level
     }
 
     private func modelChanged() {
         // Raising macOS brightness while dimmed (Control Center, auto-brightness
         // in a brighter room) means someone wants light: drop the dim.
         let builtIn = model.entries.first { $0.info.isBuiltIn }?.systemBrightness
-        if panelGamma.dimLevel > 0, PanelDim.cancels(previous: lastBuiltInBrightness, current: builtIn) {
+        if dimmer.level > 0, PanelDim.cancels(previous: lastBuiltInBrightness, current: builtIn) {
             Log.xdr.info("dim cancelled: brightness raised to \(builtIn ?? -1)")
-            panelGamma.dimLevel = 0
+            dimmer.level = 0
             dimRow?.update(value: 0)
         }
         lastBuiltInBrightness = builtIn

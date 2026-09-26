@@ -9,20 +9,14 @@ import IOKit.ps
 import MetalKit
 import MonitorLizardCore
 
-/// Owns the built-in panel's transfer table, which does two opposite things:
-///
-/// - **XDR brightness**, the way BrightIntosh does it: a one-pixel EDR window
-///   drawing above SDR white makes the window server put the panel into HDR
-///   mode, and once the panel reports the headroom a transfer table lifts SDR
-///   white into it.
-/// - **Dim**, below macOS's lowest brightness: the table scaled down
-///   (`PanelDim`). No overlay, no battery rule.
-///
-/// They are exclusive; `PanelTablePolicy` picks which one the table holds.
+/// XDR brightness for the built-in panel, the way BrightIntosh does it: a
+/// one-pixel EDR window drawing above SDR white makes the window server put
+/// the panel into HDR mode, and once the panel reports the headroom a transfer
+/// table lifts SDR white into it.
 ///
 /// A gamma table is exactly what BetterDisplay's wake colour-scramble bug
-/// left behind, so the lifecycle is the feature, for both:
-/// - off at every launch; neither is ever persisted
+/// left behind, so the lifecycle is the feature:
+/// - off at every launch; the on state is never persisted
 /// - the table is cleared before sleep, before display sleep, on quit, and at
 ///   the start of every display reconfiguration (lid close, the panel leaving
 ///   the display list); it comes back only once reconfiguration has been
@@ -33,7 +27,7 @@ import MonitorLizardCore
 ///
 /// CoreGraphics also restores every transfer table when the process exits,
 /// so a crash cannot strand the boost either.
-final class PanelGammaController {
+final class XDRController {
     static let offOnBatteryKey = "xdrOffOnBattery"
     private static let settleDelay: TimeInterval = 2
     /// How long to wait for the panel to switch into HDR mode after the
@@ -41,22 +35,7 @@ final class PanelGammaController {
     private static let hdrPollInterval: TimeInterval = 0.5
     private static let hdrPollAttempts = 20
 
-    /// XDR brightness on.
     private(set) var isEnabled = false
-    /// How far below macOS's minimum the panel is dimmed, 0 (off) … 1. In
-    /// memory only. Dimming switches XDR off.
-    var dimLevel: Float = 0 {
-        didSet {
-            dimLevel = max(0, min(1, dimLevel))
-            guard dimLevel != oldValue else { return }
-            if dimLevel > 0 && isEnabled {
-                isEnabled = false
-                Log.xdr.info("XDR brightness off: dimming")
-            }
-            Log.xdr.info("dim \(self.dimLevel) (factor \(PanelDim.factor(level: self.dimLevel)))")
-            update()
-        }
-    }
     /// 0…1 across the panel's usable headroom. In memory only, like `isEnabled`.
     var boost: Float = 1 {
         didSet { update() }
@@ -80,8 +59,7 @@ final class PanelGammaController {
     /// Each panel's own table, captured before the first boost and scaled
     /// from then on, so a calibration curve is lifted rather than replaced.
     private var baseTables: [CGDirectDisplayID: [CGGammaValue]] = [:]
-    /// Panels whose table is ours right now (boosted or dimmed).
-    private var written: Set<CGDirectDisplayID> = []
+    private var boosted: Set<CGDirectDisplayID> = []
     private var hdrWaits: [CGDirectDisplayID: DispatchWorkItem] = [:]
     private var powerSource: CFRunLoopSource?
 
@@ -94,7 +72,7 @@ final class PanelGammaController {
         onBattery = Self.isOnBattery()
         CGDisplayRegisterReconfigurationCallback({ _, flags, userInfo in
             guard let userInfo else { return }
-            let controller = Unmanaged<PanelGammaController>.fromOpaque(userInfo).takeUnretainedValue()
+            let controller = Unmanaged<XDRController>.fromOpaque(userInfo).takeUnretainedValue()
             controller.reconfigured(beginning: flags.contains(.beginConfigurationFlag))
         }, Unmanaged.passUnretained(self).toOpaque())
 
@@ -119,7 +97,7 @@ final class PanelGammaController {
         let context = Unmanaged.passUnretained(self).toOpaque()
         if let source = IOPSNotificationCreateRunLoopSource({ context in
             guard let context else { return }
-            Unmanaged<PanelGammaController>.fromOpaque(context).takeUnretainedValue().powerChanged()
+            Unmanaged<XDRController>.fromOpaque(context).takeUnretainedValue().powerChanged()
         }, context)?.takeRetainedValue() {
             CFRunLoopAddSource(CFRunLoopGetMain(), source, .defaultMode)
             powerSource = source
@@ -129,22 +107,14 @@ final class PanelGammaController {
     /// On quit: the table goes before the app does.
     func stop() {
         isEnabled = false
-        dimLevel = 0
         update()
     }
 
     func setEnabled(_ on: Bool) {
         isEnabled = on && !isBlockedByBattery
-        if isEnabled && dimLevel > 0 {
-            // Exclusive with the dim; without this the policy would keep dimming.
-            dimLevel = 0
-        }
         Log.xdr.info("XDR brightness \(self.isEnabled ? "on" : "off")")
         update()
     }
-
-    /// Whether there is a built-in panel to dim.
-    var isDimAvailable: Bool { !Self.builtInDisplays().isEmpty }
 
     /// Whether the display is a built-in panel with EDR headroom to boost into.
     func isSupported(_ id: CGDirectDisplayID) -> Bool {
@@ -193,12 +163,11 @@ final class PanelGammaController {
     }
 
     private func update() {
-        switch PanelTablePolicy.mode(xdrEnabled: isEnabled, dimLevel: dimLevel,
-                                     asleep: systemAsleep || screensAsleep, settling: settling,
-                                     onBattery: onBattery, offOnBattery: offOnBattery) {
-        case .boost: apply()
-        case .dim(let factor): applyDim(factor)
-        case .none: clear()
+        if XDRPolicy.shouldBoost(enabled: isEnabled, asleep: systemAsleep || screensAsleep, settling: settling,
+                                 onBattery: onBattery, offOnBattery: offOnBattery) {
+            apply()
+        } else {
+            clear()
         }
     }
 
@@ -211,7 +180,7 @@ final class PanelGammaController {
             window.orderOut(nil)
             overlays[id] = nil
             baseTables[id] = nil
-            written.remove(id)
+            boosted.remove(id)
             hdrWaits[id]?.cancel()
             hdrWaits[id] = nil
         }
@@ -253,58 +222,29 @@ final class PanelGammaController {
         DispatchQueue.main.asyncAfter(deadline: .now() + Self.hdrPollInterval, execute: work)
     }
 
-    /// The panel's own table, read once before we first write ours.
-    private func base(_ id: CGDirectDisplayID) -> [CGGammaValue]? {
-        if let base = baseTables[id] { return base }
-        guard let base = Self.readTable(id) else {
-            Log.xdr.error("display \(id): couldn't read the current transfer table; leaving it alone")
-            return nil
-        }
-        if XDRGamma.carriesBoost(base) {
-            // Someone else's boost is on the panel; scaling it would be
-            // exactly the kind of leftover this feature avoids.
-            Log.xdr.error("display \(id): transfer table already carries a boost; leaving it alone")
-            return nil
-        }
-        baseTables[id] = base
-        return base
-    }
-
-    /// The dim: the panel's own table scaled down. Written before the overlay
-    /// goes, so leaving XDR never shows a lifted table without HDR mode.
-    private func applyDim(_ factor: Float) {
-        for work in hdrWaits.values { work.cancel() }
-        hdrWaits = [:]
-        let panels = Self.builtInDisplays()
-        for id in written where !panels.contains(id) {
-            written.remove(id)
-            baseTables[id] = nil
-        }
-        for id in panels {
-            guard let base = base(id) else { continue }
-            var table = XDRGamma.scaled(base, by: factor)
-            let rc = CGSetDisplayTransferByTable(id, UInt32(table.count), &table, &table, &table)
-            if rc == .success {
-                if !written.contains(id) { Log.xdr.info("display \(id): dim on, factor \(factor)") }
-                written.insert(id)
-            } else {
-                Log.xdr.error("display \(id): transfer table write failed rc=\(rc.rawValue)")
-            }
-        }
-        for window in overlays.values { window.orderOut(nil) }
-        overlays = [:]
-    }
-
     private func writeTable(_ id: CGDirectDisplayID, headroom: Float) {
-        guard let base = base(id) else { return }
+        if baseTables[id] == nil {
+            guard let base = Self.readTable(id) else {
+                Log.xdr.error("display \(id): couldn't read the current transfer table; not boosting")
+                return
+            }
+            if XDRGamma.carriesBoost(base) {
+                // Someone else's boost is on the panel; stacking ours on it
+                // would be exactly the kind of leftover this feature avoids.
+                Log.xdr.error("display \(id): transfer table already carries a boost; not boosting")
+                return
+            }
+            baseTables[id] = base
+        }
+        guard let base = baseTables[id] else { return }
         let factor = XDRGamma.factor(boost: boost, headroom: headroom)
         var table = XDRGamma.scaled(base, by: factor)
         let rc = CGSetDisplayTransferByTable(id, UInt32(table.count), &table, &table, &table)
         if rc == .success {
-            if !written.contains(id) {
+            if !boosted.contains(id) {
                 Log.xdr.info("display \(id): boost on, factor \(factor) of headroom \(headroom)")
             }
-            written.insert(id)
+            boosted.insert(id)
         } else {
             Log.xdr.error("display \(id): transfer table write failed rc=\(rc.rawValue)")
         }
@@ -313,15 +253,15 @@ final class PanelGammaController {
     private func clear() {
         for work in hdrWaits.values { work.cancel() }
         hdrWaits = [:]
-        let ids = written
-        written = []
+        let ids = boosted
+        boosted = []
         baseTables = [:]
         if !ids.isEmpty {
             // Table first, overlay second: the other way round would briefly
             // show a >1 table with no HDR mode behind it.
             CGDisplayRestoreColorSyncSettings()
             verifyCleared(ids)
-            Log.xdr.info("transfer table restored")
+            Log.xdr.info("boost off")
         }
         for window in overlays.values { window.orderOut(nil) }
         overlays = [:]
