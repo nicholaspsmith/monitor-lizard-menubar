@@ -14,8 +14,9 @@ import MonitorLizardCore
 /// the ones an Apple keyboard sends, and the ones KeyLight posts for F1/F2 on
 /// other boards — and swallows a press only when the main display is a
 /// monitor we control; otherwise the key passes through and macOS dims the
-/// built-in panel as usual. Ctrl+brightness is not bound, so KeyLight still
-/// gets it.
+/// built-in panel as usual — until macOS's brightness reaches 0, where the
+/// keys go on to dim the panel further (`BrightnessKeys.route`).
+/// Ctrl+brightness is not bound, so KeyLight still gets it.
 ///
 /// Needs Accessibility, like every event tap. The tap is only created once
 /// trusted; until then `isWaitingForTrust` is true and the menu says so.
@@ -30,9 +31,10 @@ final class BrightnessKeyController {
 
     private let tap: HotkeyTap
     private var trustTimer: Timer?
-    /// Returns the display to step, or nil to pass the key through.
-    private let target: () -> CGDirectDisplayID?
-    private let step: (CGDirectDisplayID, BrightnessKeys.Direction) -> Void
+    /// Where a press in this direction goes.
+    private let route: (BrightnessKeys.Direction) -> BrightnessKeys.Route
+    private let stepExternal: (CGDirectDisplayID, BrightnessKeys.Direction) -> Void
+    private let stepDim: (BrightnessKeys.Direction) -> Void
 
     var isEnabled: Bool {
         didSet {
@@ -44,10 +46,12 @@ final class BrightnessKeyController {
     var isTrusted: Bool { tap.isTrusted }
     var isWaitingForTrust: Bool { isEnabled && !tap.isTrusted }
 
-    init(target: @escaping () -> CGDirectDisplayID?,
-         step: @escaping (CGDirectDisplayID, BrightnessKeys.Direction) -> Void) {
-        self.target = target
-        self.step = step
+    init(route: @escaping (BrightnessKeys.Direction) -> BrightnessKeys.Route,
+         stepExternal: @escaping (CGDirectDisplayID, BrightnessKeys.Direction) -> Void,
+         stepDim: @escaping (BrightnessKeys.Direction) -> Void) {
+        self.route = route
+        self.stepExternal = stepExternal
+        self.stepDim = stepDim
         // On by default: an absent key reads as enabled.
         isEnabled = UserDefaults.standard.object(forKey: Self.enabledKey) as? Bool ?? true
         var handler: ((String) -> Bool)!
@@ -99,8 +103,12 @@ final class BrightnessKeyController {
     }
 
     private func handle(_ token: String) -> Bool {
-        guard let id = target() else { return false }
-        step(id, token == "brightness.up" ? .up : .down)
+        let direction: BrightnessKeys.Direction = token == "brightness.up" ? .up : .down
+        switch route(direction) {
+        case .external(let id): stepExternal(id, direction)
+        case .dim: stepDim(direction)
+        case .passThrough: return false
+        }
         return true
     }
 }

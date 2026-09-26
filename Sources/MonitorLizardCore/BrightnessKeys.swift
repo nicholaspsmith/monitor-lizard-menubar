@@ -55,4 +55,29 @@ public enum BrightnessKeys {
         guard !main.isBuiltIn, main.source != .none else { return nil }
         return main.id
     }
+
+    /// Where a brightness key goes.
+    public enum Route: Equatable {
+        /// Step this external monitor.
+        case external(CGDirectDisplayID)
+        /// Dim this built-in panel below macOS's minimum, or undim it.
+        case dim(CGDirectDisplayID)
+        /// Leave the key to macOS.
+        case passThrough
+    }
+
+    /// An external main display is stepped as before. On a built-in main
+    /// panel the keys belong to macOS until its brightness reaches 0; then down
+    /// starts dimming, and while dimmed both keys move the dim, so up walks
+    /// back out before macOS brightens again.
+    public static func route(among displays: [Display], direction: Direction,
+                             builtInBrightness: Float?, dimLevel: Float, dimAvailable: Bool) -> Route {
+        if let id = target(among: displays) { return .external(id) }
+        guard dimAvailable, let main = displays.first(where: \.isMain) ?? displays.first, main.isBuiltIn else {
+            return .passThrough
+        }
+        if dimLevel > 0 { return .dim(main.id) }
+        if direction == .down, let b = builtInBrightness, b <= 0.001 { return .dim(main.id) }
+        return .passThrough
+    }
 }

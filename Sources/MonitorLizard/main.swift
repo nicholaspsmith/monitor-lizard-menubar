@@ -12,7 +12,7 @@ import StatusItemKit
 /// and contrast (DisplayServices brightness where macOS drives the display
 /// itself), HiDPI resolution, built-in brightness, and Night Shift with an
 /// automatic fix for displays macOS wrongly calls televisions, and XDR
-/// brightness for the built-in panel.
+/// brightness and dimming below macOS's minimum for the built-in panel.
 final class App: NSObject, NSApplicationDelegate {
     private var status: StatusItemController!
     private var yieldClient: YieldClient!
@@ -28,8 +28,13 @@ final class App: NSObject, NSApplicationDelegate {
     var systemBrightnessRows: [CGDirectDisplayID: SliderRow] = [:]
     private var fixInProgress = false
     private var brightnessKeys: BrightnessKeyController!
-    /// XDR brightness for the built-in panel; off at every launch.
-    let xdr = XDRController()
+    /// The built-in panel's transfer table: XDR brightness or dim. Both off at
+    /// every launch.
+    let panelGamma = PanelGammaController()
+    /// The open menu's Dim row, so the keys move it.
+    weak var dimRow: SliderRow?
+    /// The built-in panel's last macOS brightness, to notice it being raised.
+    private var lastBuiltInBrightness: Float?
 
     override init() {
         model = DisplayModel(brightness: DisplayServicesBrightness(), nightShift: CoreBrightnessNightShift(), tvRoles: TVRoleTracker())
@@ -65,22 +70,31 @@ final class App: NSObject, NSApplicationDelegate {
         yieldClient.start()
 
         brightnessKeys = BrightnessKeyController(
-            target: { [weak self] in
-                guard let self else { return nil }
-                return BrightnessKeys.target(among: self.model.entries.map {
-                    BrightnessKeys.Display(id: $0.info.id, isMain: $0.info.isMain,
-                                           isBuiltIn: $0.info.isBuiltIn, source: $0.brightnessSource)
-                })
+            route: { [weak self] direction in
+                guard let self else { return .passThrough }
+                let builtIn = self.model.entries.first { $0.info.isBuiltIn }
+                return BrightnessKeys.route(
+                    among: self.model.entries.map {
+                        BrightnessKeys.Display(id: $0.info.id, isMain: $0.info.isMain,
+                                               isBuiltIn: $0.info.isBuiltIn, source: $0.brightnessSource)
+                    },
+                    direction: direction,
+                    builtInBrightness: builtIn.flatMap { self.model.liveSystemBrightness($0.info.id) },
+                    dimLevel: self.panelGamma.dimLevel,
+                    dimAvailable: self.panelGamma.isDimAvailable
+                )
             },
-            step: { [weak self] id, direction in self?.model.stepBrightness(id, direction) }
+            stepExternal: { [weak self] id, direction in self?.model.stepBrightness(id, direction) },
+            stepDim: { [weak self] direction in self?.stepDim(direction) }
         )
         brightnessKeys.start()
-        xdr.start()
+        panelGamma.start()
+        lastBuiltInBrightness = model.entries.first { $0.info.isBuiltIn }?.systemBrightness
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        // The boost's transfer table must never outlive the app.
-        xdr.stop()
+        // Neither the boost's nor the dim's transfer table may outlive the app.
+        panelGamma.stop()
     }
 
     // MARK: - Icon
@@ -103,7 +117,22 @@ final class App: NSObject, NSApplicationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.65) { [weak self] in self?.refreshIcon() }
     }
 
+    /// A brightness key press past macOS's minimum, or back.
+    private func stepDim(_ direction: BrightnessKeys.Direction) {
+        panelGamma.dimLevel = PanelDim.step(panelGamma.dimLevel, direction)
+        dimRow?.update(value: Double(panelGamma.dimLevel) * 100)
+    }
+
     private func modelChanged() {
+        // Raising macOS brightness while dimmed (Control Center, auto-brightness
+        // in a brighter room) means someone wants light: drop the dim.
+        let builtIn = model.entries.first { $0.info.isBuiltIn }?.systemBrightness
+        if panelGamma.dimLevel > 0, PanelDim.cancels(previous: lastBuiltInBrightness, current: builtIn) {
+            Log.xdr.info("dim cancelled: brightness raised to \(builtIn ?? -1)")
+            panelGamma.dimLevel = 0
+            dimRow?.update(value: 0)
+        }
+        lastBuiltInBrightness = builtIn
         refreshIcon()
         // Correct any open slider to the value the monitor confirmed, or that
         // DisplayServices reports after a change made elsewhere.

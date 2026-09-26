@@ -45,6 +45,7 @@ extension App {
             break
         }
         if entry.info.isBuiltIn {
+            addDimRow(to: menu)
             addXDRRows(entry, to: menu)
             return
         }
@@ -93,33 +94,47 @@ extension App {
         menu.addItem(ns)
     }
 
+    /// Dim: below macOS's lowest brightness. The keys reach it too, once
+    /// macOS's brightness is at 0.
+    private func addDimRow(to menu: NSMenu) {
+        let row = NSMenuItem()
+        let view = SliderRow(title: "Dim", symbol: "moon", value: Double(panelGamma.dimLevel) * 100, maximum: 100,
+                             format: { PanelDim.label(level: Float($0 / 100)) }) { [weak self] v in
+            self?.panelGamma.dimLevel = Float(v / 100)
+        }
+        view.toolTip = "Dims the screen past its lowest brightness. The brightness-down key keeps going here once brightness is at zero. Off again at every launch."
+        row.view = view
+        dimRow = view
+        menu.addItem(row)
+    }
+
     /// XDR brightness: only on a built-in panel with EDR headroom.
     private func addXDRRows(_ entry: DisplayModel.Entry, to menu: NSMenu) {
-        guard xdr.isSupported(entry.info.id) else { return }
+        guard panelGamma.isSupported(entry.info.id) else { return }
         let toggle: NSMenuItem
-        if xdr.isBlockedByBattery {
+        if panelGamma.isBlockedByBattery {
             toggle = NSMenuItem(title: "XDR Brightness · off on battery", action: nil, keyEquivalent: "")
             toggle.isEnabled = false
         } else {
             toggle = NSMenuItem(title: "XDR Brightness", action: #selector(toggleXDR), keyEquivalent: "")
             toggle.target = self
-            toggle.state = xdr.isEnabled ? .on : .off
+            toggle.state = panelGamma.isEnabled ? .on : .off
         }
         toggle.toolTip = "Brightens the panel past its normal maximum using its HDR headroom. Off again at every launch."
         menu.addItem(toggle)
 
-        if xdr.isEnabled {
+        if panelGamma.isEnabled {
             let boost = NSMenuItem()
-            boost.view = SliderRow(title: "Boost", symbol: "sun.max.fill", value: Double(xdr.boost) * 100, maximum: 100,
+            boost.view = SliderRow(title: "Boost", symbol: "sun.max.fill", value: Double(panelGamma.boost) * 100, maximum: 100,
                                    format: { "\(Int($0.rounded()))" }) { [weak self] v in
-                self?.xdr.boost = Float(v / 100)
+                self?.panelGamma.boost = Float(v / 100)
             }
             menu.addItem(boost)
         }
 
         let battery = NSMenuItem(title: "Off on Battery", action: #selector(toggleXDROffOnBattery), keyEquivalent: "")
         battery.target = self
-        battery.state = xdr.offOnBattery ? .on : .off
+        battery.state = panelGamma.offOnBattery ? .on : .off
         battery.indentationLevel = 1
         menu.addItem(battery)
 
@@ -129,8 +144,11 @@ extension App {
         menu.addItem(note)
     }
 
-    @objc func toggleXDR() { xdr.setEnabled(!xdr.isEnabled) }
-    @objc func toggleXDROffOnBattery() { xdr.offOnBattery.toggle() }
+    @objc func toggleXDR() {
+        panelGamma.setEnabled(!panelGamma.isEnabled)
+        dimRow?.update(value: Double(panelGamma.dimLevel) * 100)
+    }
+    @objc func toggleXDROffOnBattery() { panelGamma.offOnBattery.toggle() }
 
     private func headerTitle(_ name: String, tag: String) -> NSAttributedString {
         let s = NSMutableAttributedString(string: name, attributes: [.font: NSFont.menuFont(ofSize: 0), .foregroundColor: NSColor.secondaryLabelColor])
