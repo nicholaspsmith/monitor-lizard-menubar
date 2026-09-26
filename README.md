@@ -2,8 +2,10 @@
 
 <p align="center"><img src="docs/mascot.png" width="160" alt="Monitor Lizard mascot, from the Menubarn widget library"></p>
 
-A small macOS menu-bar app that controls your **external monitor** from one
-dropdown: brightness, contrast, resolution and Night Shift. Nothing else.
+A small macOS menu-bar app that controls your **displays** from one dropdown:
+an external monitor's brightness, contrast and resolution, Night Shift, and
+the MacBook's own screen from dimmer than macOS allows to brighter than it
+allows (XDR).
 
 Part of the [Menubarn](https://widgets.nicksmith.software) widget library.
 
@@ -11,22 +13,25 @@ Part of the [Menubarn](https://widgets.nicksmith.software) widget library.
 
 <p align="center"><img src="docs/menu.png" width="450" alt="The Monitor Lizard menu: Brightness, Contrast and Resolution sliders for a Dell monitor over HDMI, a Night Shift toggle with a Warmth slider, Start at Login, Icon and Quit"></p>
 
+(The screenshot shows an external monitor; the built-in screen's section has
+its one Brightness slider and the XDR Brightness toggle.)
+
 One section per display, then Night Shift for the whole Mac:
 
 | Row | What it does |
 |-----|--------------|
-| **Brightness** | Sets the monitor's own backlight over DDC/CI, like pressing its front buttons. Also works for the built-in screen, and for displays macOS dims itself (TVs over HDMI, Apple and some USB-C monitors — the ones the keyboard brightness keys already work on). |
+| **Brightness** | Sets the monitor's own backlight over DDC/CI, like pressing its front buttons. Also works for displays macOS dims itself (TVs over HDMI, Apple and some USB-C monitors — the ones the keyboard brightness keys already work on). |
 | **Contrast** | Same, for contrast. |
 | **Resolution** | Drag through the sharp HiDPI "looks like" sizes. The `▸` submenu lists every mode. |
 | **Night Shift** | Toggle it, and set the warmth. |
 | **Brightness** (built-in screen) | One slider for the whole range. The bottom fifth is **Dim**, past the lowest brightness macOS offers. The middle is macOS's own range. With **XDR Brightness** on, the top fifth brightens past full. The brightness keys walk the same ladder. See below. |
 | **XDR Brightness** | Built-in XDR panel only: extends the Brightness slider and the brightness-up key past full, into the panel's HDR headroom. Off at every launch. See below. |
-| **Brightness Keys** | The keyboard's brightness keys step the main monitor's brightness, sixteen steps across the range, by the same route as its Brightness row. Needs Accessibility once. |
+| **Brightness Keys** | The keyboard's brightness keys step the main monitor's brightness, sixteen steps across the range, by the same route as its Brightness row. On the built-in screen they go on into Dim below macOS's lowest step, and into XDR above full. Needs Accessibility once. |
 | **✓ / ⏳ / ✗ line** | Whether Night Shift works on that display. See below. |
 
 Sliders apply live as you drag. Nothing is polled on a timer, and nothing you
 set is stored by the app: the monitor keeps its own brightness and macOS keeps
-the rest.
+the rest. Dim and XDR brightness are off again every time the app starts.
 
 ## Brightness keys
 
