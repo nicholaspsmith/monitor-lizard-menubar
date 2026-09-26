@@ -66,4 +66,61 @@ final class BrightnessKeysTests: XCTestCase {
     func testNoDisplaysPassesThrough() {
         XCTAssertNil(BrightnessKeys.target(among: []))
     }
+
+    // MARK: Routing, with dimming below macOS's minimum on the built-in panel
+
+    private func route(_ displays: [BrightnessKeys.Display], _ d: BrightnessKeys.Direction,
+                       brightness: Float? = 0.5, dim: Float = 0, available: Bool = true,
+                       xdr: Bool = false, boost: Float = 0) -> BrightnessKeys.Route {
+        BrightnessKeys.route(among: displays, direction: d, builtInBrightness: brightness, dimLevel: dim, dimAvailable: available,
+                             xdrEnabled: xdr, boost: boost)
+    }
+
+    // With XDR on, up past full brightness steps into the boost, and while
+    // boosted both keys move the boost.
+    func testRouteIntoAndOutOfTheBoost() {
+        let ds = [display(2, main: true, builtIn: true, source: .system)]
+        XCTAssertEqual(route(ds, .up, brightness: 1, xdr: true), .boost(2))
+        XCTAssertEqual(route(ds, .up, brightness: 1, xdr: false), .passThrough)
+        XCTAssertEqual(route(ds, .up, brightness: 0.9375, xdr: true), .passThrough)
+        XCTAssertEqual(route(ds, .down, brightness: 1, xdr: true, boost: 0.25), .boost(2))
+        XCTAssertEqual(route(ds, .down, brightness: 1, xdr: true, boost: 0), .passThrough)
+    }
+
+    func testRouteExternalMainIsUnchanged() {
+        let ds = [display(1, main: true), display(2, main: false, builtIn: true, source: .system)]
+        XCTAssertEqual(route(ds, .down, brightness: 0), .external(1))
+    }
+
+    func testRouteBuiltInPassesThroughAboveTheLowestLitStep() {
+        let ds = [display(2, main: true, builtIn: true, source: .system)]
+        XCTAssertEqual(route(ds, .down, brightness: 0.125), .passThrough)
+        XCTAssertEqual(route(ds, .up, brightness: 0.0625), .passThrough)
+    }
+
+    // Brightness 0 is the backlight off; the lowest lit step is 1/16, and
+    // every value below it lights the panel the same (1 nit).
+    func testRouteBuiltInDimsFromTheLowestLitStep() {
+        let ds = [display(2, main: true, builtIn: true, source: .system)]
+        XCTAssertEqual(route(ds, .down, brightness: 0.0625), .dim(2))
+        XCTAssertEqual(route(ds, .down, brightness: 0.03), .dim(2))
+        XCTAssertEqual(route(ds, .down, brightness: 0), .passThrough, "already off")
+        XCTAssertEqual(route(ds, .down, brightness: nil), .passThrough, "unknown brightness: leave it to macOS")
+    }
+
+    func testRouteUpFromOffComesBackThroughTheDim() {
+        let ds = [display(2, main: true, builtIn: true, source: .system)]
+        XCTAssertEqual(route(ds, .up, brightness: 0), .dim(2))
+    }
+
+    func testRouteWhileDimmedBothKeysDim() {
+        let ds = [display(2, main: true, builtIn: true, source: .system)]
+        XCTAssertEqual(route(ds, .up, brightness: 0.0625, dim: 0.25), .dim(2))
+        XCTAssertEqual(route(ds, .down, brightness: 0.4, dim: 0.25), .dim(2))
+    }
+
+    func testRouteWithoutDimPassesThrough() {
+        let ds = [display(2, main: true, builtIn: true, source: .system)]
+        XCTAssertEqual(route(ds, .down, brightness: 0.0625, available: false), .passThrough)
+    }
 }
