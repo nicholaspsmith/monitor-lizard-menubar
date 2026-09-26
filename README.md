@@ -98,8 +98,8 @@ before sleep, when the displays go to sleep, on quit, whenever the display
 setup changes (lid closed, a monitor plugged in), and put back only once
 things have settled. After each removal the app reads the table back to make
 sure the boost is really gone. It is never applied to external displays, it
-is off again every time the app starts, and by default it switches itself off
-when you unplug (**Off on Battery**).
+is off again every time the app starts, and it switches itself off when you
+unplug. While on battery the menu shows "XDR Brightness · off on battery".
 
 Side effects: HDR video can clip its brightest highlights while it is on, and
 the panel draws more power and runs warmer.

@@ -128,21 +128,9 @@ extension App {
         }
         toggle.toolTip = "Extends the Brightness slider (and the brightness-up key) past full, into the panel's HDR headroom. Off again at every launch."
         menu.addItem(toggle)
-
-        let battery = NSMenuItem(title: "Off on Battery", action: #selector(toggleXDROffOnBattery), keyEquivalent: "")
-        battery.target = self
-        battery.state = xdr.offOnBattery ? .on : .off
-        battery.indentationLevel = 1
-        menu.addItem(battery)
-
-        let note = NSMenuItem(title: "HDR video may clip · more battery and heat", action: nil, keyEquivalent: "")
-        note.isEnabled = false
-        note.indentationLevel = 1
-        menu.addItem(note)
     }
 
     @objc func toggleXDR() { xdr.setEnabled(!xdr.isEnabled) }
-    @objc func toggleXDROffOnBattery() { xdr.offOnBattery.toggle() }
 
     private func headerTitle(_ name: String, tag: String) -> NSAttributedString {
         let s = NSMutableAttributedString(string: name, attributes: [.font: NSFont.menuFont(ofSize: 0), .foregroundColor: NSColor.secondaryLabelColor])

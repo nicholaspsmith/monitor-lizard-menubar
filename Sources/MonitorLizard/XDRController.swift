@@ -54,6 +54,8 @@ final class XDRController {
         }
     }
     /// The toggle can't be turned on while unplugged with "Off on Battery" set.
+    /// (No menu row since 2026-09-26: the setting keeps its stored value,
+    /// on by default.)
     var isBlockedByBattery: Bool { onBattery && offOnBattery }
 
     private var onBattery = false
