@@ -58,4 +58,13 @@ final class PanelDimTests: XCTestCase {
         XCTAssertEqual(mode(dim: 1, battery: true), .dim(PanelDim.factor(level: 1)), "the battery rule is XDR's")
         XCTAssertEqual(mode(xdr: true, battery: true), .none)
     }
+
+    // One key press: the ladder is 1/16 → eight dim steps → off, and back.
+    func testKeyStepWalksTheLadder() {
+        XCTAssertEqual(PanelDim.keyStep(level: 0, brightness: 0.0625, direction: .down), PanelDim.KeyStep(level: 0.125, brightness: nil))
+        XCTAssertEqual(PanelDim.keyStep(level: 0.5, brightness: 0.0625, direction: .up), PanelDim.KeyStep(level: 0.375, brightness: nil))
+        XCTAssertEqual(PanelDim.keyStep(level: 1, brightness: 0.0625, direction: .down), PanelDim.KeyStep(level: 0, brightness: 0), "deepest, then off")
+        XCTAssertEqual(PanelDim.keyStep(level: 0, brightness: 0, direction: .up), PanelDim.KeyStep(level: 1, brightness: 0.0625), "off, then deepest")
+        XCTAssertEqual(PanelDim.keyStep(level: 0.125, brightness: 0.0625, direction: .up), PanelDim.KeyStep(level: 0, brightness: nil), "out of the dim; macOS takes the next press")
+    }
 }

@@ -79,26 +79,35 @@ final class BrightnessKeysTests: XCTestCase {
         XCTAssertEqual(route(ds, .down, brightness: 0), .external(1))
     }
 
-    func testRouteBuiltInPassesThroughAboveZero() {
+    func testRouteBuiltInPassesThroughAboveTheLowestLitStep() {
         let ds = [display(2, main: true, builtIn: true, source: .system)]
-        XCTAssertEqual(route(ds, .down, brightness: 0.0625), .passThrough)
-        XCTAssertEqual(route(ds, .up, brightness: 0), .passThrough)
+        XCTAssertEqual(route(ds, .down, brightness: 0.125), .passThrough)
+        XCTAssertEqual(route(ds, .up, brightness: 0.0625), .passThrough)
     }
 
-    func testRouteBuiltInDimsPastZero() {
+    // Brightness 0 is the backlight off; the lowest lit step is 1/16, and
+    // every value below it lights the panel the same (1 nit).
+    func testRouteBuiltInDimsFromTheLowestLitStep() {
         let ds = [display(2, main: true, builtIn: true, source: .system)]
-        XCTAssertEqual(route(ds, .down, brightness: 0), .dim(2))
+        XCTAssertEqual(route(ds, .down, brightness: 0.0625), .dim(2))
+        XCTAssertEqual(route(ds, .down, brightness: 0.03), .dim(2))
+        XCTAssertEqual(route(ds, .down, brightness: 0), .passThrough, "already off")
         XCTAssertEqual(route(ds, .down, brightness: nil), .passThrough, "unknown brightness: leave it to macOS")
+    }
+
+    func testRouteUpFromOffComesBackThroughTheDim() {
+        let ds = [display(2, main: true, builtIn: true, source: .system)]
+        XCTAssertEqual(route(ds, .up, brightness: 0), .dim(2))
     }
 
     func testRouteWhileDimmedBothKeysDim() {
         let ds = [display(2, main: true, builtIn: true, source: .system)]
-        XCTAssertEqual(route(ds, .up, brightness: 0, dim: 0.25), .dim(2))
+        XCTAssertEqual(route(ds, .up, brightness: 0.0625, dim: 0.25), .dim(2))
         XCTAssertEqual(route(ds, .down, brightness: 0.4, dim: 0.25), .dim(2))
     }
 
     func testRouteWithoutDimPassesThrough() {
         let ds = [display(2, main: true, builtIn: true, source: .system)]
-        XCTAssertEqual(route(ds, .down, brightness: 0, available: false), .passThrough)
+        XCTAssertEqual(route(ds, .down, brightness: 0.0625, available: false), .passThrough)
     }
 }
