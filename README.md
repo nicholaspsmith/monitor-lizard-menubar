@@ -143,7 +143,8 @@ cd monitor-lizard-menubar
 ```
 
 That builds `Monitor Lizard.app`, links it into `~/Applications` and launches
-it. Turn on **Start at Login** from the menu if you want it to stay.
+it, asking first whether to turn on **Start at Login** (also in the menu, or
+`Monitor\ Lizard.app/Contents/MacOS/MonitorLizard --login on|off|status`).
 
 Quit BetterDisplay, MonitorControl or any other DDC tool first. Two apps
 talking to one monitor at the same time interfere with each other.

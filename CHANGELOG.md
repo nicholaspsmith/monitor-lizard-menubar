@@ -8,8 +8,10 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
-## [Unreleased]
+## [1.2.1] - 2026-09-28
 
+- `install.sh` now asks whether to turn on Start at Login (skipped when it is already on, or when there is no terminal to ask in), then relaunches the app, quitting any running copy first so the new build takes over
+- `MonitorLizard --login on|off|status` turns Start at Login on or off from the shell, or reports it, and exits without opening the app
 - docs: README shows the version and how releases carry the changelog
 
 ## [1.2.0] - 2026-09-26
