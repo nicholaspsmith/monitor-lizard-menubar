@@ -1,13 +1,13 @@
 # Monitor Lizard
 
-<p align="center"><img src="docs/mascot.png" width="160" alt="Monitor Lizard mascot, from the Menubarn widget library"></p>
+<p align="center"><img src="docs/mascot.png" width="160" alt="Monitor Lizard mascot, from Menumon"></p>
 
 A small macOS menu-bar app that controls your **displays** from one dropdown:
 an external monitor's brightness, contrast and resolution, Night Shift, and
 the MacBook's own screen from dimmer than macOS allows to brighter than it
 allows (XDR).
 
-Part of the [Menubarn](https://widgets.nicksmith.software) widget library.
+Part of the [Menumon](https://menumon.nicksmith.software).
 
 **Version 1.2.0** · [Changelog](https://github.com/nicholaspsmith/monitor-lizard-menubar/releases)
 
@@ -59,7 +59,7 @@ work without the two apps knowing about each other.
 
 An event tap needs **Accessibility**: grant it when prompted, or later from the
 menu's "⚠ Grant Accessibility…" row. The app is signed with the same stable
-local identity as the other Menubarn apps, so the grant survives rebuilds.
+local identity as the other Menumon apps, so the grant survives rebuilds.
 
 ## Dim
 
