@@ -8,6 +8,11 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.5.0] - 2026-10-02
+
+- feat: Armonitor's full-screen lap now plays when the app starts, when a new display is connected, and when Night Shift turns on or off; moving a slider (contrast, warmth) or changing resolution no longer sets it off
+- The full-screen lap is about 15% faster: 3.4 seconds instead of 4
+
 ## [1.4.1] - 2026-10-02
 
 - Armonitor's full-screen lap after a display change takes 4 seconds instead of 8
