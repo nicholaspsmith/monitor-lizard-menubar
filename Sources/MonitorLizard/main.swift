@@ -22,7 +22,19 @@ final class App: NSObject, NSApplicationDelegate {
     private var appearanceMenu: AppearanceMenu!
     private var tongueUntil = Date.distantPast
     private var minuteCue: MinuteCue!
-    private let lap = MonitorLizardLap()
+    /// The big lap round the whole screen, played when a display setting
+    /// other than brightness changes.
+    private let screenLapRun = MonitorLizardLap()
+    /// Once a minute, in his turn with the other animated mascots, Armonitor
+    /// runs a lap of his own monitor in the icon. Progress 0...1, 0 at rest.
+    private var iconLap: CGFloat = 0
+    private lazy var iconLapAnimation = IconAnimation(duration: CharacterIcon.monitorLizardLapDuration, frame: { [weak self] t in
+        self?.iconLap = CGFloat(t / CharacterIcon.monitorLizardLapDuration)
+        self?.drawLapFrame()
+    }, completion: { [weak self] in
+        self?.iconLap = 0
+        self?.refreshIcon()
+    })
     /// Open-menu slider rows, so a confirmed read can correct them in place.
     var sliderRows: [CGDirectDisplayID: [VCPCode: SliderRow]] = [:]
     /// Same, for DisplayServices brightness rows: the keyboard keys and
@@ -73,7 +85,10 @@ final class App: NSObject, NSApplicationDelegate {
         status.start()
         yieldClient = YieldClient(item: status)
         yieldClient.start()
-        minuteCue = MinuteCue { [weak self] in self?.runLap() }
+        minuteCue = MinuteCue { [weak self] in
+            guard let self, self.appearance.style == .character, !self.screenLapRun.isRunning else { return }
+            self.iconLapAnimation.start()
+        }
         minuteCue.start()
 
         brightnessKeys = BrightnessKeyController(
@@ -111,28 +126,44 @@ final class App: NSObject, NSApplicationDelegate {
 
     // MARK: - Icon
 
+    /// The brightness and Night Shift the icon last showed. Lap frames reuse
+    /// them: asking the display for both 60 times a second is what made the
+    /// lap expensive, not drawing it.
+    private var shown: (fraction: CGFloat, nightShift: Bool) = (0, false)
+
+    private func drawLapFrame() {
+        guard appearance.style == .character else { return }
+        status.setIcon(CharacterIcon.monitorLizard(brightness: shown.fraction, nightShift: shown.nightShift,
+                                                   tongue: Date() < tongueUntil, lap: iconLap))
+    }
+
     func refreshIcon() {
         let fraction = model.mainBrightnessFraction
         let icon: NSImage
         if appearance.style == .character {
             let ns = model.nightShift?.status().enabled ?? false
+            shown = (CGFloat(fraction), ns)
             icon = CharacterIcon.monitorLizard(brightness: fraction, nightShift: ns, tongue: Date() < tongueUntil,
-                                               lizard: !lap.isRunning)
+                                               lizard: !screenLapRun.isRunning, lap: iconLap)
         } else {
             icon = appearance.image(fraction: fraction)
         }
         status.setIcon(icon)
     }
 
-    /// Once a minute, in his turn with the other animated mascots, Armonitor
-    /// leaves the monitor and slithers counterclockwise round the screen and
-    /// back. Not while the slot is lent out (yielded) or off screen.
-    private func runLap() {
-        guard appearance.style == .character, let button = status.button, let window = button.window,
-              let screen = window.screen else { return }
+    /// A display setting other than brightness changed (contrast, resolution,
+    /// Night Shift): Armonitor leaves the monitor and slithers counterclockwise
+    /// round the whole screen and back. A slider drag fires this many times;
+    /// once he is off, the rest are ignored until he is home. Not while the
+    /// slot is lent out (yielded) or off screen.
+    func screenLap() {
+        guard appearance.style == .character, !screenLapRun.isRunning, let button = status.button,
+              let window = button.window, let screen = window.screen else { return }
         let slot = window.convertToScreen(button.convert(button.bounds, to: nil))
         guard slot.width >= 8 else { return }
-        lap.run(from: slot, on: screen) { [weak self] in self?.refreshIcon() }
+        iconLapAnimation.cancel()
+        iconLap = 0
+        screenLapRun.run(from: slot, on: screen) { [weak self] in self?.refreshIcon() }
         refreshIcon()
     }
 
@@ -234,8 +265,9 @@ final class App: NSObject, NSApplicationDelegate {
             menu.addItem(toggle)
             let warmth = NSMenuItem()
             warmth.view = SliderRow(title: "Warmth", symbol: "thermometer.sun", value: Double(s.strength) * 100, maximum: 100,
-                                    format: { "\(Int($0.rounded()))" }) { v in
+                                    format: { "\(Int($0.rounded()))" }) { [weak self] v in
                 _ = ns.setStrength(Float(v / 100))
+                self?.screenLap()
             }
             menu.addItem(warmth)
         } else {
@@ -302,6 +334,7 @@ final class App: NSObject, NSApplicationDelegate {
         guard let ns = model.nightShift else { return }
         _ = ns.setEnabled(!ns.status().enabled)
         refreshIcon()
+        screenLap()
     }
 
     @objc private func toggleBrightnessKeys() { brightnessKeys.isEnabled.toggle() }

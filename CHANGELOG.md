@@ -8,6 +8,11 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.4.0] - 2026-10-02
+
+- feat: Armonitor's once-a-minute lap is now round his own monitor in the icon (3 s), not round the whole screen
+- feat: changing contrast, resolution, Night Shift or its warmth sends Armonitor on his lap round the whole screen
+
 ## [1.3.0] - 2026-10-02
 
 - feat: once a minute Armonitor slithers counterclockwise round the screen and back into his monitor (8 s, click-through), in turn with the other animated Menumon mascots
