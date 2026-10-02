@@ -22,9 +22,10 @@ final class App: NSObject, NSApplicationDelegate {
     private var appearanceMenu: AppearanceMenu!
     private var tongueUntil = Date.distantPast
     private var minuteCue: MinuteCue!
-    /// The big lap round the whole screen, played when a display setting
-    /// other than brightness changes.
+    /// The big lap round the whole screen, played at launch, when a new
+    /// display appears and when Night Shift turns on or off.
     private let screenLapRun = MonitorLizardLap()
+    private var lapTrigger = LapTrigger()
     /// Once a minute, in his turn with the other animated mascots, Armonitor
     /// runs a lap of his own monitor in the icon. Progress 0...1, 0 at rest.
     private var iconLap: CGFloat = 0
@@ -90,6 +91,9 @@ final class App: NSObject, NSApplicationDelegate {
             self.iconLapAnimation.start()
         }
         minuteCue.start()
+        // A lap to say hello. Deferred so the status item has its place in the
+        // bar before he leaves it.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in self?.screenLap() }
 
         brightnessKeys = BrightnessKeyController(
             route: { [weak self] direction in
@@ -151,11 +155,11 @@ final class App: NSObject, NSApplicationDelegate {
         status.setIcon(icon)
     }
 
-    /// A display setting other than brightness changed (contrast, resolution,
-    /// Night Shift): Armonitor leaves the monitor and slithers counterclockwise
-    /// round the whole screen and back. A slider drag fires this many times;
-    /// once he is off, the rest are ignored until he is home. Not while the
-    /// slot is lent out (yielded) or off screen.
+    /// Armonitor leaves the monitor and slithers counterclockwise round the
+    /// whole screen and back: when the app starts, when a display it has not
+    /// seen appears, and when Night Shift turns on or off (`LapTrigger`) —
+    /// yes/no changes only, never a slider. A second trigger while he is out
+    /// is ignored. Not while the slot is lent out (yielded) or off screen.
     func screenLap() {
         guard appearance.style == .character, !screenLapRun.isRunning, let button = status.button,
               let window = button.window, let screen = window.screen else { return }
@@ -230,6 +234,10 @@ final class App: NSObject, NSApplicationDelegate {
         }
         lastBuiltInBrightness = builtIn
         refreshIcon()
+        if lapTrigger.update(displays: Set(model.entries.map { $0.info.id }),
+                             nightShift: model.nightShift?.status().enabled) {
+            screenLap()
+        }
         // Correct any open slider to the value the monitor confirmed, or that
         // DisplayServices reports after a change made elsewhere.
         for entry in model.entries {
@@ -265,9 +273,8 @@ final class App: NSObject, NSApplicationDelegate {
             menu.addItem(toggle)
             let warmth = NSMenuItem()
             warmth.view = SliderRow(title: "Warmth", symbol: "thermometer.sun", value: Double(s.strength) * 100, maximum: 100,
-                                    format: { "\(Int($0.rounded()))" }) { [weak self] v in
+                                    format: { "\(Int($0.rounded()))" }) { v in
                 _ = ns.setStrength(Float(v / 100))
-                self?.screenLap()
             }
             menu.addItem(warmth)
         } else {
@@ -334,7 +341,6 @@ final class App: NSObject, NSApplicationDelegate {
         guard let ns = model.nightShift else { return }
         _ = ns.setEnabled(!ns.status().enabled)
         refreshIcon()
-        screenLap()
     }
 
     @objc private func toggleBrightnessKeys() { brightnessKeys.isEnabled.toggle() }

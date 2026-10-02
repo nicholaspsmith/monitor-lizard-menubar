@@ -9,7 +9,7 @@ allows (XDR).
 
 Part of the [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.4.1** · [Changelog](https://github.com/nicholaspsmith/monitor-lizard-menubar/releases)
+**Version 1.5.0** · [Changelog](https://github.com/nicholaspsmith/monitor-lizard-menubar/releases)
 
 ## What you get
 
@@ -44,11 +44,12 @@ mascots are running they take turns, a second apart: Archimedes (Claude
 Usage), Menu Pimp (Mac Daddy), Carol (SoundChain), Caveepyan (VPN & DNS), then
 Armonitor, counting only the ones that are running.
 
-Change a display setting other than brightness (contrast, resolution, Night
-Shift or its warmth) and he does a bigger lap: out of the monitor and
-counterclockwise round the whole screen, along the menu bar, down the left
-edge, along the bottom, up the right and back into his slot, in 4 seconds. He
-runs in a click-through overlay, so nothing under him stops working.
+He does a bigger lap when the app starts, when a display it has not seen
+before is connected, and when Night Shift turns on or off (from the menu,
+Control Center or its schedule): out of the monitor and counterclockwise round
+the whole screen, along the menu bar, down the left edge, along the bottom, up
+the right and back into his slot, in about 3.4 seconds. Sliders never set it
+off. He runs in a click-through overlay, so nothing under him stops working.
 
 Both laps are skipped when Reduce Motion is on.
 
