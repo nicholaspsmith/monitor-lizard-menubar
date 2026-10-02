@@ -9,7 +9,7 @@ allows (XDR).
 
 Part of the [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.4.0** · [Changelog](https://github.com/nicholaspsmith/monitor-lizard-menubar/releases)
+**Version 1.4.1** · [Changelog](https://github.com/nicholaspsmith/monitor-lizard-menubar/releases)
 
 ## What you get
 
@@ -47,7 +47,7 @@ Armonitor, counting only the ones that are running.
 Change a display setting other than brightness (contrast, resolution, Night
 Shift or its warmth) and he does a bigger lap: out of the monitor and
 counterclockwise round the whole screen, along the menu bar, down the left
-edge, along the bottom, up the right and back into his slot, in 8 seconds. He
+edge, along the bottom, up the right and back into his slot, in 4 seconds. He
 runs in a click-through overlay, so nothing under him stops working.
 
 Both laps are skipped when Reduce Motion is on.

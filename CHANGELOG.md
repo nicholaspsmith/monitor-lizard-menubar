@@ -8,6 +8,10 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.4.1] - 2026-10-02
+
+- Armonitor's full-screen lap after a display change takes 4 seconds instead of 8
+
 ## [1.4.0] - 2026-10-02
 
 - feat: Armonitor's once-a-minute lap is now round his own monitor in the icon (3 s), not round the whole screen
