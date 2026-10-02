@@ -57,6 +57,7 @@ extension App {
                                value: entry.contrast.map { Double($0.current) }, maximum: Double(entry.contrast?.maximum ?? 100),
                                format: { "\(Int($0.rounded()))" }) { [weak self] v in
                 self?.model.setContrast(entry.info.id, UInt16(v.rounded()))
+                self?.screenLap()
             }
             c.view = contrastView
             sliderRows[entry.info.id, default: [:]][.contrast] = contrastView
@@ -72,7 +73,7 @@ extension App {
         res.view = ResolutionRow(plan: entry.plan) { [weak self] spec in
             guard let self else { return .failure }
             let rc = self.model.apply(spec, to: entry.info.id)
-            if rc != .success { Log.modes.error("apply failed rc=\(rc.rawValue)") }
+            if rc != .success { Log.modes.error("apply failed rc=\(rc.rawValue)") } else { self.screenLap() }
             return rc
         }
         res.submenu = ResolutionMenu.make(plan: entry.plan, displayID: entry.info.id, target: self, action: #selector(pickMode(_:)))
@@ -140,7 +141,7 @@ extension App {
 
     @objc func pickMode(_ sender: NSMenuItem) {
         guard let box = sender.representedObject as? ModeBox else { return }
-        _ = model.apply(box.mode, to: CGDirectDisplayID(sender.tag))
+        if model.apply(box.mode, to: CGDirectDisplayID(sender.tag)) == .success { screenLap() }
     }
 
     @objc func retryTVFix(_ sender: NSMenuItem) {

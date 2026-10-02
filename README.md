@@ -9,7 +9,7 @@ allows (XDR).
 
 Part of the [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.3.0** · [Changelog](https://github.com/nicholaspsmith/monitor-lizard-menubar/releases)
+**Version 1.4.0** · [Changelog](https://github.com/nicholaspsmith/monitor-lizard-menubar/releases)
 
 ## What you get
 
@@ -35,13 +35,22 @@ Sliders apply live as you drag. Nothing is polled on a timer, and nothing you
 set is stored by the app: the monitor keeps its own brightness and macOS keeps
 the rest. Dim and XDR brightness are off again every time the app starts.
 
-## Armonitor's lap
+## Armonitor's laps
 
-Once a minute Armonitor, the gecko, leaves his monitor and slithers
-counterclockwise round the whole screen: left along the menu bar, down the
-left edge, along the bottom, up the right and back into his slot, in 8
-seconds. He runs in a click-through overlay, so nothing under him stops
-working. When several Menumon mascots are running they take turns, a second apart: Archimedes (Claude Usage), Menu Pimp (Mac Daddy), Carol (SoundChain), Caveepyan (VPN & DNS), then Armonitor (Monitor Lizard), counting only the ones that are running. Skipped when Reduce Motion is on.
+Once a minute Armonitor, the gecko, runs a lap of his own monitor in the menu
+bar: he leaves his pose, slithers counterclockwise round the glass on the
+bezel and settles back where he was, in 3 seconds. When several Menumon
+mascots are running they take turns, a second apart: Archimedes (Claude
+Usage), Menu Pimp (Mac Daddy), Carol (SoundChain), Caveepyan (VPN & DNS), then
+Armonitor, counting only the ones that are running.
+
+Change a display setting other than brightness (contrast, resolution, Night
+Shift or its warmth) and he does a bigger lap: out of the monitor and
+counterclockwise round the whole screen, along the menu bar, down the left
+edge, along the bottom, up the right and back into his slot, in 8 seconds. He
+runs in a click-through overlay, so nothing under him stops working.
+
+Both laps are skipped when Reduce Motion is on.
 
 ## Brightness keys
 
