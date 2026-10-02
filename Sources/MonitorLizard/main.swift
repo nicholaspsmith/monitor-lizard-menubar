@@ -21,6 +21,8 @@ final class App: NSObject, NSApplicationDelegate {
     private let appearance = MeterAppearance(defaultStyle: .character)
     private var appearanceMenu: AppearanceMenu!
     private var tongueUntil = Date.distantPast
+    private var minuteCue: MinuteCue!
+    private let lap = MonitorLizardLap()
     /// Open-menu slider rows, so a confirmed read can correct them in place.
     var sliderRows: [CGDirectDisplayID: [VCPCode: SliderRow]] = [:]
     /// Same, for DisplayServices brightness rows: the keyboard keys and
@@ -71,6 +73,8 @@ final class App: NSObject, NSApplicationDelegate {
         status.start()
         yieldClient = YieldClient(item: status)
         yieldClient.start()
+        minuteCue = MinuteCue { [weak self] in self?.runLap() }
+        minuteCue.start()
 
         brightnessKeys = BrightnessKeyController(
             route: { [weak self] direction in
@@ -112,11 +116,24 @@ final class App: NSObject, NSApplicationDelegate {
         let icon: NSImage
         if appearance.style == .character {
             let ns = model.nightShift?.status().enabled ?? false
-            icon = CharacterIcon.monitorLizard(brightness: fraction, nightShift: ns, tongue: Date() < tongueUntil)
+            icon = CharacterIcon.monitorLizard(brightness: fraction, nightShift: ns, tongue: Date() < tongueUntil,
+                                               lizard: !lap.isRunning)
         } else {
             icon = appearance.image(fraction: fraction)
         }
         status.setIcon(icon)
+    }
+
+    /// Once a minute, in his turn with the other animated mascots, Armonitor
+    /// leaves the monitor and slithers counterclockwise round the screen and
+    /// back. Not while the slot is lent out (yielded) or off screen.
+    private func runLap() {
+        guard appearance.style == .character, let button = status.button, let window = button.window,
+              let screen = window.screen else { return }
+        let slot = window.convertToScreen(button.convert(button.bounds, to: nil))
+        guard slot.width >= 8 else { return }
+        lap.run(from: slot, on: screen) { [weak self] in self?.refreshIcon() }
+        refreshIcon()
     }
 
     private func flickTongue() {

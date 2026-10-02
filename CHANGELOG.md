@@ -8,6 +8,11 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.3.0] - 2026-10-02
+
+- feat: once a minute Armonitor slithers counterclockwise round the screen and back into his monitor (8 s, click-through), in turn with the other animated Menumon mascots
+- Mascot renamed: Armando is Armonitor
+
 ## [1.2.1] - 2026-09-28
 
 - `install.sh` now asks whether to turn on Start at Login (skipped when it is already on, or when there is no terminal to ask in), then relaunches the app, quitting any running copy first so the new build takes over
