@@ -44,12 +44,16 @@ mascots are running they take turns, a second apart: Archimedes (Claude
 Usage), Menu Pimp (Mac Daddy), Carol (SoundChain), Caveepyan (VPN & DNS), then
 Armonitor, counting only the ones that are running.
 
+![Armonitor's lap of his monitor](docs/animation.png)
+
 He does a bigger lap when the app starts, when a display it has not seen
 before is connected, and when Night Shift turns on or off (from the menu,
 Control Center or its schedule): out of the monitor and counterclockwise round
 the whole screen, along the menu bar, down the left edge, along the bottom, up
 the right and back into his slot, in about 3.4 seconds. Sliders never set it
 off. He runs in a click-through overlay, so nothing under him stops working.
+
+![Armonitor's lap of the whole screen, on a sketch of a display](docs/animation-screen-lap.png)
 
 Both laps are skipped when Reduce Motion is on.
 
