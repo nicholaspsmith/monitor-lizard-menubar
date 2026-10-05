@@ -9,7 +9,7 @@ an external monitor's brightness, contrast and resolution, Night Shift, and
 the MacBook's own screen from dimmer than macOS allows to brighter than it
 allows (XDR).
 
-Part of the [Menumon](https://menumon.nicksmith.software).
+Part of [Menumon](https://menumon.nicksmith.software).
 
 **Version 1.5.0** · [Changelog](https://github.com/nicholaspsmith/monitor-lizard-menubar/releases)
 
@@ -33,25 +33,22 @@ One section per display, then Night Shift for the whole Mac:
 | **Brightness Keys** | The keyboard's brightness keys step the main monitor's brightness, sixteen steps across the range, by the same route as its Brightness row. On the built-in screen they go on into Dim below macOS's lowest step, and into XDR above full. Needs Accessibility once. |
 | **✓ / ⏳ / ✗ line** | Whether Night Shift works on that display. See below. |
 
-Sliders apply live as you drag. Nothing is polled on a timer, and nothing you
-set is stored by the app: the monitor keeps its own brightness and macOS keeps
-the rest. Dim and XDR brightness are off again every time the app starts.
+Sliders apply live as you drag. Nothing is polled on a timer, and the app
+stores no display settings: the monitor keeps its own brightness and macOS
+keeps the rest. Dim and XDR brightness are off every time the app starts.
 
 ## Armonitor's laps
 
-Once a minute Armonitor, the gecko, runs a lap of his own monitor in the menu
-bar: he leaves his pose, slithers counterclockwise round the glass on the
-bezel and settles back where he was, in 3 seconds. When several Menumon
-mascots are running they take turns, a second apart: Archimedes (Claude
-Usage), Menu Pimp (Mac Daddy), Carol (SoundChain), Caveepyan (VPN & DNS), then
-Armonitor, counting only the ones that are running.
+Once a minute Armonitor, the gecko on the menu-bar icon, runs a lap of his
+monitor (3 s). When several Menumon mascots are running they take turns, a
+second apart: Archimedes (Claude Usage), Menu Pimp (Mac Daddy), Carol
+(SoundChain), Iguanamous (VPN & DNS), then Armonitor (Monitor Lizard),
+counting only the ones that are running.
 
-He does a bigger lap when the app starts, when a display it has not seen
-before is connected, and when Night Shift turns on or off (from the menu,
-Control Center or its schedule): out of the monitor and counterclockwise round
-the whole screen, along the menu bar, down the left edge, along the bottom, up
-the right and back into his slot, in about 3.4 seconds. Sliders never set it
-off. He runs in a click-through overlay, so nothing under him stops working.
+He runs a lap of the whole screen (about 3.4 s) when the app starts, when a
+display it has not seen before is connected, and when Night Shift turns on or
+off (from the menu, Control Center or its schedule). Sliders never trigger it.
+The lap plays in a click-through overlay, so nothing under it stops working.
 
 ![Armonitor's lap of the whole screen, on a sketch of a display](docs/animation-screen-lap.png)
 
@@ -60,75 +57,67 @@ Both laps are skipped when Reduce Motion is on.
 ## Brightness keys
 
 macOS only lets the brightness keys dim the built-in panel. With **Brightness
-Keys** on (the default), Monitor Lizard catches the plain brightness keys and,
-when the main display is an external monitor it can drive, steps that
-monitor's brightness instead and eats the key; the gecko flicks its tongue as
-the change lands. A monitor that refuses DDC but that macOS can dim itself is
-stepped through DisplayServices, the same route its Brightness row uses. When
-the main display is the built-in panel, or a monitor nothing can drive, the
-key passes through untouched and macOS does what it always did, with one
-addition: at the built-in panel's lowest lit step, brightness-down **dims**
-it (below) instead of switching the screen off. After the deepest dim the
-next press switches it off, and brightness-up walks back the same way. With
-XDR Brightness on, brightness-up past full steps into the boost in four
-+25% steps. Holding a key repeats. `Ctrl` + brightness is never touched, so
-[KeyLight](https://github.com/nicholaspsmith/keylight-menubar) still gets it
-for the keyboard backlight.
+Keys** on (the default), Monitor Lizard catches the plain brightness keys:
 
-It listens for the media-key event an Apple keyboard sends, which is also what
-KeyLight posts for F1/F2 on a third-party keyboard, so both kinds of keyboard
-work without the two apps knowing about each other.
+- **Main display is an external monitor it can drive** — it steps that
+  monitor's brightness over the same route as its Brightness row (DDC, or
+  DisplayServices for a monitor that refuses DDC but that macOS can dim) and
+  swallows the key. The gecko flicks its tongue as the change lands.
+- **Main display is the built-in panel, or a monitor nothing can drive** — the
+  key passes through to macOS, except that at the built-in panel's lowest lit
+  step brightness-down enters [Dim](#dim) instead of switching the screen off.
+  After the deepest dim step the next press switches it off; brightness-up
+  walks back the same way. With XDR Brightness on, brightness-up past full
+  steps into the boost in four +25% steps.
 
-An event tap needs **Accessibility**: grant it when prompted, or later from the
-menu's "⚠ Grant Accessibility…" row. The app is signed with the same stable
-local identity as the other Menumon apps, so the grant survives rebuilds.
+Holding a key repeats. `Ctrl` + brightness is never touched, so
+[KeyLight](https://github.com/nicholaspsmith/keylight-menubar) keeps it for the
+keyboard backlight. The app listens for the media-key event an Apple keyboard
+sends, which is also what KeyLight posts for F1/F2 on a third-party keyboard,
+so both kinds of keyboard work without the apps knowing about each other.
+
+The event tap needs **Accessibility**: grant it when prompted, or later from
+the menu's "⚠ Grant Accessibility…" row. The app is signed with the stable
+local identity shared by the Menumon apps, so the grant survives rebuilds.
 
 ## Dim
 
 On the built-in panel every brightness from macOS's lowest key step (1/16)
-down to just above zero lights the backlight the same 1 nit, and zero
-switches it off, so macOS has nothing dimmer to offer. **Dim** (under the
-built-in display, the bottom fifth of its Brightness slider) lays a
-click-through black overlay over the panel instead. The keys walk it in five
-steps that each let through about 20% less light than the one before: 81,
-66, 53, 43 and 35%. So every press is visibly darker, and the deepest step
-is still readable. The slider covers the same range smoothly, and its
-readout says "Dim 53%" and so on.
-
-The ladder on the brightness keys is macOS's steps down to 1/16, then the
-five dim steps, then off. Up from off comes back at the deepest dim.
+down to just above zero gives the same 1-nit backlight, and zero switches it
+off. **Dim** (the bottom fifth of the built-in Brightness slider) goes darker
+by laying a click-through black overlay over the panel. The keys walk it in
+five steps letting through 81, 66, 53, 43 and 35% of the light; the slider
+covers the same range smoothly, with a readout such as "Dim 53%". The key
+ladder is macOS's steps down to 1/16, then the five dim steps, then off; up
+from off returns to the deepest dim step.
 
 The overlay covers everything, menus and the menu bar included. It takes no
 clicks, follows you into every Space and full-screen app, and is left out of
-screenshots and recordings. The pointer stays at full brightness. It can't
-be left behind, because it goes when the app does. It is off every time the
-app starts. Raising the brightness another way, such as Control Center or auto-brightness
-in a brighter room, cancels it.
-
-A gamma table would be the usual way to do this, and it is how XDR
-brightness works. Scaled below 1, though, it changes nothing visible on this
-panel, in SDR or in HDR mode.
+screenshots and recordings; the pointer stays at full brightness. It goes when
+the app quits and is off every time the app starts. Raising the brightness
+another way (Control Center, auto-brightness) cancels it.
 
 ## XDR brightness
 
 On a MacBook Pro with an XDR panel, **XDR Brightness** (under the built-in
 display) extends the built-in Brightness slider: its top fifth pushes the
 whole screen past the normal 500-nit ceiling, up to twice that, using the
-headroom the panel keeps for HDR. The readout says "XDR +50%" and so on. It
-works the way BrightIntosh does: a single pixel of HDR white in the panel's
-top-left corner switches it into HDR mode, and once the panel reports the
-headroom a gamma table lifts ordinary white into it. The headroom takes about
-two seconds to ramp up after HDR switches on, and it moves with brightness,
-so the table follows it rather than being set once.
+panel's HDR headroom. The readout says "XDR +50%" and so on. As in
+BrightIntosh, a single pixel of HDR white in the panel's top-left corner
+switches it into HDR mode, and once the panel reports headroom a gamma table
+lifts ordinary white into it. The headroom ramps up over about two seconds
+and moves with brightness, so the table follows it continuously.
 
-A leftover gamma table is what scrambles colours after wake with other apps,
-so Monitor Lizard only keeps one on the panel while it is safe: it is removed
-before sleep, when the displays go to sleep, on quit, whenever the display
-setup changes (lid closed, a monitor plugged in), and put back only once
-things have settled. After each removal the app reads the table back to make
-sure the boost is really gone. It is never applied to external displays, it
-is off again every time the app starts, and it switches itself off when you
-unplug. While on battery the menu shows "XDR Brightness · off on battery".
+A leftover gamma table can scramble colours after wake, so the table is
+removed before sleep, when the displays sleep, on quit and whenever the
+display setup changes (lid closed, monitor plugged in), and is reapplied only
+once things settle. After each removal the app reads the table back to confirm
+the boost is gone. It is never applied to external displays and is off every
+time the app starts.
+
+On battery, XDR Brightness switches off and the menu shows "XDR Brightness ·
+off on battery" until you plug in. To allow it on battery:
+`defaults write com.nicholaspsmith.MonitorLizard xdrOffOnBattery -bool false`.
 
 Side effects: HDR video can clip its brightest highlights while it is on, and
 the panel draws more power and runs warmer.
@@ -146,30 +135,33 @@ running for the fix to hold.
 
 <p align="center"><img src="docs/menubar-icon.png" alt="The menu-bar icon in four states: dim blue screen, bright blue screen, amber Night Shift screen, and the tongue flick"></p>
 
-The mascot, shrunk to the menu bar: a gecko hugging the monitor, head
-peering over the top corner, paws on the bezel, tail curling up over the
-screen. The screen fills with blue as your main display gets brighter, turns
-amber while Night Shift is on, and the gecko flicks its tongue when a slider
-change lands on the monitor. Prefer a plain meter? **menu ▸ Icon** offers
-Arc, Gauge, Pie or Wedge instead.
+A gecko on a monitor. The screen fills with blue as the main display gets
+brighter and turns amber while Night Shift is on; the gecko flicks its tongue
+when a slider or key change lands on the monitor. **Icon** in the menu also
+offers plain Arc, Gauge, Pie or Wedge meters.
 
 ## Install
 
-Requires macOS 14 or later on Apple Silicon.
+Requires macOS 14 or later on Apple Silicon, Xcode Command Line Tools, and
+[StatusItemKit](https://github.com/nicholaspsmith/StatusItemKit) and
+[HotkeyKit](https://github.com/nicholaspsmith/HotkeyKit) cloned **beside** this
+repo (the package depends on `../StatusItemKit` and `../HotkeyKit`).
 
 ```sh
-git clone https://github.com/nicholaspsmith/StatusItemKit ../StatusItemKit
-git clone https://github.com/nicholaspsmith/monitor-lizard-menubar
-cd monitor-lizard-menubar
-./install.sh
+cd ~/Code
+git clone https://github.com/nicholaspsmith/StatusItemKit.git
+git clone https://github.com/nicholaspsmith/HotkeyKit.git
+git clone https://github.com/nicholaspsmith/monitor-lizard-menubar.git
+cd monitor-lizard-menubar && ./install.sh
 ```
 
-That builds `Monitor Lizard.app`, links it into `~/Applications` and launches
-it, asking first whether to turn on **Start at Login** (also in the menu, or
-`Monitor\ Lizard.app/Contents/MacOS/MonitorLizard --login on|off|status`).
+`install.sh` builds `Monitor Lizard.app`, links it into `~/Applications`,
+asks whether to turn on **Start at Login**, and launches it. Start at Login is
+also in the menu, or run the installed binary:
+`"$HOME/Applications/Monitor Lizard.app/Contents/MacOS/MonitorLizard" --login on` (or `off`, `status`).
 
-Quit BetterDisplay, MonitorControl or any other DDC tool first. Two apps
-talking to one monitor at the same time interfere with each other.
+Quit BetterDisplay, MonitorControl or any other DDC tool first: two apps
+talking to one monitor at once interfere with each other.
 
 ## How it works
 
@@ -186,7 +178,8 @@ talking to one monitor at the same time interfere with each other.
   built-in panel they pass through to macOS down to 1/16, then drive Dim.
 - **Dim** is a borderless black `NSWindow` per built-in panel at
   `.screenSaver` level, click-through, `sharingType = .none`, joining every
-  Space. Its opacity is `1 − 0.35^level`.
+  Space. Its opacity is `1 − 0.35^level`. (Gamma tables scaled below 1 change
+  nothing visible on this panel, in SDR or HDR, so Dim cannot use one.)
 - **XDR brightness** is a one-pixel EDR Metal window that puts the panel in
   HDR mode, plus a transfer table (`CGSetDisplayTransferByTable`) that lifts
   SDR white into the headroom.
@@ -197,9 +190,6 @@ talking to one monitor at the same time interfere with each other.
   `/Library/Displays/Contents/Resources/Overrides/DisplayVendorID-<hex>/DisplayProductID-<hex>`
   containing `DisplayIsTV = false`. macOS reads it when the display attaches.
 
-Only XDR brightness touches a gamma table, and only the built-in panel's. It
-is removed before sleep, on quit and whenever the display setup changes.
-
 ## Develop
 
 ```sh
@@ -208,8 +198,7 @@ scripts/build-app.sh       # builds build/Monitor Lizard.app
 log show --last 5m --predicate 'subsystem == "com.nicholaspsmith.MonitorLizard"' --style compact
 ```
 
-
-### Releasing
+## Releasing
 
 Every push to `main` is a release. Before pushing, add a dated
 `## [X.Y.Z] - YYYY-MM-DD` section to the top of [`CHANGELOG.md`](CHANGELOG.md)
