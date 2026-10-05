@@ -217,16 +217,6 @@ version bump and no tag. Never tag or create a release by hand, and never
 stamped from it), and update the version line at the top of this README. `install.sh` re-arms the hook on a fresh clone.
 See [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one) for the whole rule.
 
-## Why not a SwiftBar plugin?
-
-This is a standalone `.app` built on
-[StatusItemKit](https://github.com/nicholaspsmith/StatusItemKit), not a script
-under a plugin host: no SwiftBar to install, real AppKit sliders instead of
-rendered text, event-driven refresh when displays connect or the Mac wakes,
-and an icon that keeps its place in the bar. Sliders need in-process DDC; a
-shell-out per tick would lag visibly. The full comparison is in
-[StatusItemKit's README](https://github.com/nicholaspsmith/StatusItemKit#why-not-swiftbar).
-
 ## License
 
 Copyright (c) 2026 Nicholas Smith. Licensed under the
