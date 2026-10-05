@@ -2,6 +2,8 @@
 
 <p align="center"><img src="docs/mascot.png" width="160" alt="Monitor Lizard mascot, from Menumon"></p>
 
+<p align="center"><img src="docs/animation.png" alt="Armonitor's lap of his monitor"></p>
+
 A small macOS menu-bar app that controls your **displays** from one dropdown:
 an external monitor's brightness, contrast and resolution, Night Shift, and
 the MacBook's own screen from dimmer than macOS allows to brighter than it
@@ -43,8 +45,6 @@ bezel and settles back where he was, in 3 seconds. When several Menumon
 mascots are running they take turns, a second apart: Archimedes (Claude
 Usage), Menu Pimp (Mac Daddy), Carol (SoundChain), Caveepyan (VPN & DNS), then
 Armonitor, counting only the ones that are running.
-
-![Armonitor's lap of his monitor](docs/animation.png)
 
 He does a bigger lap when the app starts, when a display it has not seen
 before is connected, and when Night Shift turns on or off (from the menu,
