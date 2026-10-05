@@ -8,6 +8,12 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.6.0] - 2026-10-05
+
+- feat: Night Shift schedule: turn Night Shift on and off at sunset and sunrise, at set times, or at sunset and sunrise moved by an offset (Night Shift ▸ Schedule…)
+- feat: ramp the warmth: Night Shift fades in after it turns on and fades out before it turns off, over 15 minutes to 3 hours
+- The menu shows when Night Shift next turns on or off
+
 ## [1.5.0] - 2026-10-02
 
 - feat: Armonitor's full-screen lap now plays when the app starts, when a new display is connected, and when Night Shift turns on or off; moving a slider (contrast, warmth) or changing resolution no longer sets it off

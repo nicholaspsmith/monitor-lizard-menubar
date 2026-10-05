@@ -52,6 +52,7 @@ private struct BlueLightStatusData {
     func getStrength(_ strength: UnsafeMutablePointer<Float>) -> Bool
     func getBlueLightStatus(_ status: UnsafeMutableRawPointer) -> Bool
     func setStatusNotificationBlock(_ block: @escaping @convention(block) () -> Void)
+    @objc optional func setMode(_ mode: Int32) -> Bool
 }
 
 public final class CoreBrightnessNightShift: NightShiftBackend {
@@ -102,4 +103,21 @@ public final class CoreBrightnessNightShift: NightShiftBackend {
     public func setStrength(_ strength: Float) -> Bool { client.setStrength(DisplayServicesBrightness.clamp(strength), commit: true) }
 
     public func onChange(_ handler: @escaping () -> Void) { handlers.append(handler) }
+
+    /// macOS's own schedule (System Settings ▸ Displays ▸ Night Shift), as
+    /// `status().mode`: 0 off, 1 sunset to sunrise, 2 custom.
+    public var systemScheduleMode: Int32 {
+        var data = BlueLightStatusData(active: false, enabled: false, sunSchedulePermitted: false, mode: 0,
+                                       schedule: .init(from: .init(hour: 0, minute: 0), to: .init(hour: 0, minute: 0)),
+                                       disableFlags: 0, available: false)
+        let ok = withUnsafeMutablePointer(to: &data) { client.getBlueLightStatus(UnsafeMutableRawPointer($0)) }
+        return ok ? data.mode : 0
+    }
+
+    /// Turns macOS's own schedule off, so it can't fight Monitor Lizard's.
+    @discardableResult
+    public func turnOffSystemSchedule() -> Bool {
+        guard systemScheduleMode != 0 else { return true }
+        return client.setMode?(0) ?? false
+    }
 }

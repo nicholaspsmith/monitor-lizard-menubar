@@ -16,6 +16,10 @@
 	<string>1.0</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.0</string>
+	<key>NSLocationUsageDescription</key>
+	<string>Monitor Lizard uses your location to work out sunset and sunrise for the Night Shift schedule.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Monitor Lizard uses your location to work out sunset and sunrise for the Night Shift schedule.</string>
 	<key>LSUIElement</key>
 	<true/>
 </dict>
