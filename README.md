@@ -39,7 +39,7 @@ keeps the rest. Dim and XDR brightness are off every time the app starts.
 
 ## Armonitor's laps
 
-Once a minute Armonitor, the gecko on the menu-bar icon, runs a lap of his
+Now and then Armonitor, the gecko on the menu-bar icon, runs a lap of his
 monitor (3 s). When several Menumon mascots are running they take turns, a
 second apart: Archimedes (Claude Usage), Menu Pimp (Mac Daddy), Carol
 (SoundChain), Iguanamous (VPN & DNS), then Armonitor (Monitor Lizard),
