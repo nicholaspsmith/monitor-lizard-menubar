@@ -28,14 +28,15 @@ One section per display, then Night Shift for the whole Mac:
 | **Contrast** | Same, for contrast. |
 | **Resolution** | Drag through the sharp HiDPI "looks like" sizes. The `▸` submenu lists every mode. |
 | **Night Shift** | Toggle it, and set the warmth. |
+| **Schedule…** | Turn Night Shift on and off by itself, and ramp its warmth through the evening. The line under it says when it next turns on or off. See below. |
 | **Brightness** (built-in screen) | One slider for the whole range. The bottom fifth is **Dim**, past the lowest brightness macOS offers. The middle is macOS's own range. With **XDR Brightness** on, the top fifth brightens past full. The brightness keys walk the same ladder. See below. |
 | **XDR Brightness** | Built-in XDR panel only: extends the Brightness slider and the brightness-up key past full, into the panel's HDR headroom. Off at every launch. See below. |
 | **Brightness Keys** | The keyboard's brightness keys step the main monitor's brightness, sixteen steps across the range, by the same route as its Brightness row. On the built-in screen they go on into Dim below macOS's lowest step, and into XDR above full. Needs Accessibility once. |
 | **✓ / ⏳ / ✗ line** | Whether Night Shift works on that display. See below. |
 
-Sliders apply live as you drag. Nothing is polled on a timer, and the app
-stores no display settings: the monitor keeps its own brightness and macOS
-keeps the rest. Dim and XDR brightness are off every time the app starts.
+Sliders apply live as you drag. Displays are never polled, and the app
+stores no display settings (only the Night Shift schedule): the monitor keeps
+its own brightness and macOS keeps the rest. Dim and XDR brightness are off every time the app starts.
 
 ## Armonitor's laps
 
@@ -121,6 +122,26 @@ off on battery" until you plug in. To allow it on battery:
 
 Side effects: HDR video can clip its brightest highlights while it is on, and
 the panel draws more power and runs warmer.
+
+## Night Shift schedule
+
+**Schedule…** opens a small window:
+
+- **Turn on**: at sunset, or at a set time. Sunset can be moved up to three
+  hours either way ("30 min before sunset").
+- **Turn off**: at sunrise, or at a set time, with the same offsets.
+- **Ramp the warmth**: Night Shift starts with no warmth and climbs to the
+  Warmth slider's setting over the first 15 min to 3 h, then fades over the
+  same span before it turns off. While the ramp runs, the Warmth slider sets
+  the warmth it climbs to.
+
+Switching Night Shift by hand (from the menu or Control Center) holds until
+the schedule's next on or off time. Turning the schedule on turns off macOS's
+own Night Shift schedule, so the two never fight.
+
+Sunset and sunrise come from the Mac's location when Location Services allow
+Monitor Lizard (it asks once, when a schedule first uses the sun), and
+otherwise from the main city of your time zone. Set times need no location.
 
 ## Why Night Shift may be off on your monitor
 

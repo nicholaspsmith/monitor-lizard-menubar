@@ -53,6 +53,9 @@ final class App: NSObject, NSApplicationDelegate {
     weak var builtInRow: SliderRow?
     /// The built-in panel's last macOS brightness, to notice it being raised.
     private var lastBuiltInBrightness: Float?
+    /// Night Shift on Monitor Lizard's own schedule, and its window.
+    private var scheduler: NightShiftScheduler?
+    private var scheduleWindow: NightShiftScheduleWindow?
 
     override init() {
         model = DisplayModel(brightness: DisplayServicesBrightness(), nightShift: CoreBrightnessNightShift(), tvRoles: TVRoleTracker())
@@ -83,6 +86,13 @@ final class App: NSObject, NSApplicationDelegate {
         // inside `DisplayModel.refresh()`'s own enumeration loop.
         model.onNeedsTVFix = { [weak self] info in DispatchQueue.main.async { self?.fixTVRole(info) } }
         model.start()
+        if let ns = model.nightShift, ns.isAvailable {
+            let scheduler = NightShiftScheduler(backend: ns)
+            scheduler.onChange = { [weak self] in self?.refreshIcon() }
+            scheduler.start()
+            self.scheduler = scheduler
+            scheduleWindow = NightShiftScheduleWindow(scheduler: scheduler)
+        }
         status.start()
         yieldClient = YieldClient(item: status)
         yieldClient.start()
@@ -272,11 +282,19 @@ final class App: NSObject, NSApplicationDelegate {
             toggle.state = s.enabled ? .on : .off
             menu.addItem(toggle)
             let warmth = NSMenuItem()
-            warmth.view = SliderRow(title: "Warmth", symbol: "thermometer.sun", value: Double(s.strength) * 100, maximum: 100,
-                                    format: { "\(Int($0.rounded()))" }) { v in
-                _ = ns.setStrength(Float(v / 100))
+            let shown = scheduler?.sliderWarmth ?? s.strength
+            warmth.view = SliderRow(title: "Warmth", symbol: "thermometer.sun", value: Double(shown) * 100, maximum: 100,
+                                    format: { "\(Int($0.rounded()))" }) { [weak self] v in
+                if let scheduler = self?.scheduler { scheduler.warmthSliderMoved(to: Float(v / 100)) }
+                else { _ = ns.setStrength(Float(v / 100)) }
             }
             menu.addItem(warmth)
+            if let scheduler {
+                let item = actionItem("Schedule…", #selector(showSchedule))
+                item.state = scheduler.schedule.isEnabled ? .on : .off
+                menu.addItem(item)
+                if let line = scheduleLine(scheduler) { menu.addItem(disabledItem(line)) }
+            }
         } else {
             menu.addItem(disabledItem("Night Shift unavailable on this macOS"))
         }
@@ -341,6 +359,19 @@ final class App: NSObject, NSApplicationDelegate {
         guard let ns = model.nightShift else { return }
         _ = ns.setEnabled(!ns.status().enabled)
         refreshIcon()
+    }
+
+    @objc private func showSchedule() { scheduleWindow?.show() }
+
+    /// "On until 6:48 AM" / "On at 7:12 PM", under the Schedule item.
+    private func scheduleLine(_ scheduler: NightShiftScheduler) -> String? {
+        guard scheduler.schedule.isEnabled else { return nil }
+        let f = DateFormatter()
+        f.dateStyle = .none
+        f.timeStyle = .short
+        if let now = scheduler.currentWindow { return "    Off at \(f.string(from: now.off))" }
+        if let next = scheduler.nextWindow { return "    On at \(f.string(from: next.on))" }
+        return nil
     }
 
     @objc private func toggleBrightnessKeys() { brightnessKeys.isEnabled.toggle() }
