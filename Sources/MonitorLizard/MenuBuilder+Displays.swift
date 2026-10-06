@@ -5,6 +5,7 @@
 // Copyright (c) 2026 Nicholas Smith
 
 import AppKit
+import StatusItemKit
 import MonitorLizardCore
 
 /// The per-display blocks of the menu. Kept out of `App` so main.swift stays
@@ -102,12 +103,11 @@ extension App {
         let row = NSMenuItem()
         let position = builtInLevel().map { BuiltInSlider.position($0, xdr: xdrOn) * 100 }
         let view = SliderRow(title: "Brightness", symbol: "sun.max", value: entry.systemBrightness == nil ? nil : position, maximum: 100,
-                             format: { BuiltInSlider.label(BuiltInSlider.level(at: $0 / 100, xdr: xdrOn)) }) { [weak self] v in
+                             // Reads XDR live: it can be switched while the menu is open.
+                             format: { [weak self] in BuiltInSlider.label(BuiltInSlider.level(at: $0 / 100, xdr: self?.xdr.isEnabled ?? xdrOn)) }) { [weak self] v in
             self?.setBuiltIn(position: v / 100)
         }
-        view.toolTip = xdrOn
-            ? "The bottom of the slider dims past the lowest brightness; the top brightens past full using the panel's HDR headroom."
-            : "The bottom of the slider dims past the lowest brightness. Turn on XDR Brightness to brighten past full."
+        view.toolTip = Self.builtInToolTip(xdr: xdrOn)
         row.view = view
         builtInRow = view
         menu.addItem(row)
@@ -121,15 +121,29 @@ extension App {
             toggle = NSMenuItem(title: "XDR Brightness · off on battery", action: nil, keyEquivalent: "")
             toggle.isEnabled = false
         } else {
-            toggle = NSMenuItem(title: "XDR Brightness", action: #selector(toggleXDR), keyEquivalent: "")
-            toggle.target = self
-            toggle.state = xdr.isEnabled ? .on : .off
+            // Keeps the menu open; the Brightness slider above re-maps at once.
+            toggle = ToggleMenuItem.make(title: "XDR Brightness", isOn: xdr.isEnabled) { [weak self] on in
+                self?.setXDR(on)
+            }
         }
         toggle.toolTip = "Extends the Brightness slider (and the brightness-up key) past full, into the panel's HDR headroom. Off again at every launch."
+        ToggleMenuItem.view(of: toggle)?.toolTip = toggle.toolTip
         menu.addItem(toggle)
     }
 
-    @objc func toggleXDR() { xdr.setEnabled(!xdr.isEnabled) }
+    /// XDR on or off from the menu, with the open Brightness slider (its
+    /// position, label and tooltip) following straight away.
+    func setXDR(_ on: Bool) {
+        xdr.setEnabled(on)
+        builtInRow?.toolTip = Self.builtInToolTip(xdr: xdr.isEnabled)
+        refreshBuiltInRow()
+    }
+
+    static func builtInToolTip(xdr: Bool) -> String {
+        xdr
+            ? "The bottom of the slider dims past the lowest brightness; the top brightens past full using the panel's HDR headroom."
+            : "The bottom of the slider dims past the lowest brightness. Turn on XDR Brightness to brighten past full."
+    }
 
     private func headerTitle(_ name: String, tag: String) -> NSAttributedString {
         let s = NSMutableAttributedString(string: name, attributes: [.font: NSFont.menuFont(ofSize: 0), .foregroundColor: NSColor.secondaryLabelColor])
