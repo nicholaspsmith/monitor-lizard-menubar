@@ -8,6 +8,12 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.7.0] - 2026-10-05
+
+- feat: a Settings submenu holds Brightness Keys, Icon, Start at Login and the version
+- feat: the Night Shift Schedule window shows the next sunset and sunrise, and when Night Shift will switch
+- The slider rows' titles line up with the menu's other items, and the sliders stretch to the menu's full width
+
 ## [1.6.0] - 2026-10-05
 
 - feat: Night Shift schedule: turn Night Shift on and off at sunset and sunrise, at set times, or at sunset and sunrise moved by an offset (Night Shift ▸ Schedule…)

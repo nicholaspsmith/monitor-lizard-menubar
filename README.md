@@ -11,11 +11,11 @@ allows (XDR).
 
 Part of [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.5.0** · [Changelog](https://github.com/nicholaspsmith/monitor-lizard-menubar/releases)
+**Version 1.7.0** · [Changelog](https://github.com/nicholaspsmith/monitor-lizard-menubar/releases)
 
 ## What you get
 
-<p align="center"><img src="docs/menu.png" width="450" alt="The Monitor Lizard menu: Brightness, Contrast and Resolution sliders for a Dell monitor over HDMI, a Night Shift toggle with a Warmth slider, Start at Login, Icon and Quit"></p>
+<p align="center"><img src="docs/menu.png" width="450" alt="The Monitor Lizard menu: Brightness, Contrast and Resolution sliders for a Dell monitor over HDMI, a Night Shift toggle with a Warmth slider and its schedule, Settings and Quit"></p>
 
 (The screenshot shows an external monitor; the built-in screen's section has
 its one Brightness slider and the XDR Brightness toggle.)
@@ -31,8 +31,9 @@ One section per display, then Night Shift for the whole Mac:
 | **Schedule…** | Turn Night Shift on and off by itself, and ramp its warmth through the evening. The line under it says when it next turns on or off. See below. |
 | **Brightness** (built-in screen) | One slider for the whole range. The bottom fifth is **Dim**, past the lowest brightness macOS offers. The middle is macOS's own range. With **XDR Brightness** on, the top fifth brightens past full. The brightness keys walk the same ladder. See below. |
 | **XDR Brightness** | Built-in XDR panel only: extends the Brightness slider and the brightness-up key past full, into the panel's HDR headroom. Off at every launch. See below. |
-| **Brightness Keys** | The keyboard's brightness keys step the main monitor's brightness, sixteen steps across the range, by the same route as its Brightness row. On the built-in screen they go on into Dim below macOS's lowest step, and into XDR above full. Needs Accessibility once. |
+| **Settings ▸ Brightness Keys** | The keyboard's brightness keys step the main monitor's brightness, sixteen steps across the range, by the same route as its Brightness row. On the built-in screen they go on into Dim below macOS's lowest step, and into XDR above full. Needs Accessibility once. |
 | **✓ / ⏳ / ✗ line** | Whether Night Shift works on that display. See below. |
+| **Settings ▸** | Brightness Keys, Icon, Start at Login, and the version. |
 
 Sliders apply live as you drag. Displays are never polled, and the app
 stores no display settings (only the Night Shift schedule): the monitor keeps
@@ -130,6 +131,8 @@ the panel draws more power and runs warmer.
 - **Turn on**: at sunset, or at a set time. Sunset can be moved up to three
   hours either way ("30 min before sunset").
 - **Turn off**: at sunrise, or at a set time, with the same offsets.
+- Each sun-based row shows the next sunset or sunrise and the time Night
+  Shift will actually switch, offset included.
 - **Ramp the warmth**: Night Shift starts with no warmth and climbs to the
   Warmth slider's setting over the first 15 min to 3 h, then fades over the
   same span before it turns off. While the ramp runs, the Warmth slider sets
@@ -178,7 +181,7 @@ cd monitor-lizard-menubar && ./install.sh
 
 `install.sh` builds `Monitor Lizard.app`, links it into `~/Applications`,
 asks whether to turn on **Start at Login**, and launches it. Start at Login is
-also in the menu, or run the installed binary:
+also in Settings ▸, or run the installed binary:
 `"$HOME/Applications/Monitor Lizard.app/Contents/MacOS/MonitorLizard" --login on` (or `off`, `status`).
 
 Quit BetterDisplay, MonitorControl or any other DDC tool first: two apps
