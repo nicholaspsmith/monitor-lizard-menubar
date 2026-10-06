@@ -8,6 +8,10 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.7.2] - 2026-10-06
+
+- Ticking a checkbox in the menu no longer closes it: Night Shift, XDR Brightness and Settings ▸ Brightness Keys stay open, and the Brightness slider re-maps at once when XDR goes on or off
+
 ## [1.7.1] - 2026-10-05
 
 - New app icon: Armonitor as he looks in the menu bar

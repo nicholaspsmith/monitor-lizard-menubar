@@ -278,9 +278,9 @@ final class App: NSObject, NSApplicationDelegate {
         menu.addItem(.separator())
         if let ns = model.nightShift, ns.isAvailable {
             let s = ns.status()
-            let toggle = actionItem("Night Shift", #selector(toggleNightShift))
-            toggle.state = s.enabled ? .on : .off
-            menu.addItem(toggle)
+            menu.addItem(ToggleMenuItem.make(title: "Night Shift", isOn: s.enabled) { [weak self] on in
+                self?.setNightShift(on)
+            })
             let warmth = NSMenuItem()
             let shown = scheduler?.sliderWarmth ?? s.strength
             warmth.view = SliderRow(title: "Warmth", symbol: "thermometer.sun", value: Double(shown) * 100, maximum: 100,
@@ -306,10 +306,10 @@ final class App: NSObject, NSApplicationDelegate {
 
         SettingsMenu.addFooter(to: menu, appName: "Monitor Lizard", items: { [self] settings in
             // The keyboard's brightness keys step the main monitor over DDC.
-            let keys = actionItem("Brightness Keys", #selector(toggleBrightnessKeys))
-            keys.state = brightnessKeys.isEnabled ? .on : .off
-            keys.toolTip = "The keyboard's brightness keys change the main monitor's brightness"
-            settings.addItem(keys)
+            settings.addItem(ToggleMenuItem.make(
+                title: "Brightness Keys", isOn: brightnessKeys.isEnabled,
+                toolTip: "The keyboard's brightness keys change the main monitor's brightness"
+            ) { [weak self] on in self?.brightnessKeys.isEnabled = on })
         }, appearance: appearanceMenu)
     }
 
@@ -350,9 +350,9 @@ final class App: NSObject, NSApplicationDelegate {
 
     // MARK: - Selectors
 
-    @objc private func toggleNightShift() {
+    private func setNightShift(_ on: Bool) {
         guard let ns = model.nightShift else { return }
-        _ = ns.setEnabled(!ns.status().enabled)
+        _ = ns.setEnabled(on)
         refreshIcon()
     }
 
@@ -369,7 +369,6 @@ final class App: NSObject, NSApplicationDelegate {
         return nil
     }
 
-    @objc private func toggleBrightnessKeys() { brightnessKeys.isEnabled.toggle() }
     @objc private func grantTrust() { brightnessKeys.requestTrust() }
 }
 
