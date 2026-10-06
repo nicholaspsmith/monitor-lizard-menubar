@@ -15,10 +15,10 @@ Part of [Menumon](https://menumon.nicksmith.software).
 
 ## What you get
 
-<p align="center"><img src="docs/menu.png" width="450" alt="The Monitor Lizard menu: Brightness, Contrast and Resolution sliders for a Dell monitor over HDMI, a Night Shift toggle with a Warmth slider and its schedule, Settings and Quit"></p>
+<p align="center"><img src="docs/menu.png" width="450" alt="The Monitor Lizard menu for the built-in screen: its one Brightness slider and XDR Brightness, then Night Shift with its Warmth slider and schedule, Settings and Quit"></p>
 
-(The screenshot shows an external monitor; the built-in screen's section has
-its one Brightness slider and the XDR Brightness toggle.)
+(The screenshot shows the built-in screen; an external monitor's section has
+Brightness, Contrast and Resolution sliders.)
 
 One section per display, then Night Shift for the whole Mac:
 
