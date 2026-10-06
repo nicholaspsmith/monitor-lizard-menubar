@@ -8,6 +8,10 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.7.1] - 2026-10-05
+
+- New app icon: Armonitor as he looks in the menu bar
+
 ## [1.7.0] - 2026-10-05
 
 - feat: a Settings submenu holds Brightness Keys, Icon, Start at Login and the version

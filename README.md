@@ -1,6 +1,6 @@
 # Monitor Lizard
 
-<p align="center"><img src="docs/mascot.png" width="160" alt="Monitor Lizard mascot, from Menumon"></p>
+<p align="center"><img src="docs/mascot.png" width="160" alt="Armonitor, Monitor Lizard's menu-bar character, on its app icon"></p>
 
 <p align="center"><img src="docs/animation.png" alt="Armonitor's lap of his monitor"></p>
 
