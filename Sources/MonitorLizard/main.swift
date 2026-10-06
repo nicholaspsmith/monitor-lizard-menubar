@@ -299,23 +299,18 @@ final class App: NSObject, NSApplicationDelegate {
             menu.addItem(disabledItem("Night Shift unavailable on this macOS"))
         }
 
-        menu.addItem(.separator())
-        // The keyboard's brightness keys step the main monitor over DDC.
-        let keys = actionItem("Brightness Keys", #selector(toggleBrightnessKeys))
-        keys.state = brightnessKeys.isEnabled ? .on : .off
-        keys.toolTip = "The keyboard's brightness keys change the main monitor's brightness"
-        menu.addItem(keys)
         if brightnessKeys.isWaitingForTrust {
+            menu.addItem(.separator())
             menu.addItem(actionItem("⚠ Grant Accessibility…", #selector(grantTrust)))
         }
 
-        let login = actionItem("Start at Login", #selector(toggleLogin))
-        login.state = LoginItem.isEnabled ? .on : .off
-        menu.addItem(login)
-        menu.addItem(appearanceMenu.menuItem())
-        menu.addItem(.separator())
-        menu.addItem(AppVersion.menuItem())
-        menu.addItem(actionItem("Quit Monitor Lizard", #selector(quit), key: "q"))
+        SettingsMenu.addFooter(to: menu, appName: "Monitor Lizard", items: { [self] settings in
+            // The keyboard's brightness keys step the main monitor over DDC.
+            let keys = actionItem("Brightness Keys", #selector(toggleBrightnessKeys))
+            keys.state = brightnessKeys.isEnabled ? .on : .off
+            keys.toolTip = "The keyboard's brightness keys change the main monitor's brightness"
+            settings.addItem(keys)
+        }, appearance: appearanceMenu)
     }
 
     func disabledItem(_ title: String) -> NSMenuItem {
@@ -369,15 +364,13 @@ final class App: NSObject, NSApplicationDelegate {
         let f = DateFormatter()
         f.dateStyle = .none
         f.timeStyle = .short
-        if let now = scheduler.currentWindow { return "    Off at \(f.string(from: now.off))" }
-        if let next = scheduler.nextWindow { return "    On at \(f.string(from: next.on))" }
+        if let now = scheduler.currentWindow { return "Off at \(f.string(from: now.off))" }
+        if let next = scheduler.nextWindow { return "On at \(f.string(from: next.on))" }
         return nil
     }
 
     @objc private func toggleBrightnessKeys() { brightnessKeys.isEnabled.toggle() }
     @objc private func grantTrust() { brightnessKeys.requestTrust() }
-    @objc private func toggleLogin() { LoginItem.toggle() }
-    @objc private func quit() { NSApp.terminate(nil) }
 }
 
 // MARK: - Entry point

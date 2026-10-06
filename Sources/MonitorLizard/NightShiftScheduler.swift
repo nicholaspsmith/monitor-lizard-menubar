@@ -84,6 +84,19 @@ final class NightShiftScheduler: NSObject, ObservableObject, CLLocationManagerDe
     var currentWindow: NightShiftSchedule.Window? { schedule.window(at: Date(), place: place) }
     var nextWindow: NightShiftSchedule.Window? { schedule.nextWindow(after: Date(), place: place) }
 
+    /// The next sunset (today's until it has passed) and the next sunrise, for
+    /// showing in the Schedule window.
+    func nextSun(_ event: SunTimes.Event) -> Date? {
+        guard let place else { return nil }
+        let now = Date()
+        for ahead in 0...2 {
+            guard let day = Calendar.current.date(byAdding: .day, value: ahead, to: now),
+                  let t = SunTimes.time(of: event, on: day, at: place) else { continue }
+            if t > now { return t }
+        }
+        return nil
+    }
+
     /// The warmth the ramp calls for right now, if the ramp is in charge.
     var rampedWarmth: Float? {
         guard schedule.isEnabled, schedule.ramps, let w = currentWindow else { return nil }

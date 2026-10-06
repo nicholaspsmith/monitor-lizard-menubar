@@ -23,6 +23,9 @@ final class ResolutionRow: NSView {
         let stops = max(plan.hiDPI.count - 1, 0)
         slider = NSSlider(value: 0, minValue: 0, maxValue: Double(stops), target: nil, action: nil)
         super.init(frame: NSRect(x: 0, y: 0, width: SliderRow.rowWidth, height: 28))
+        // Stretch to the menu's width, so the slider takes up whatever room
+        // the widest item leaves.
+        autoresizingMask = [.width]
 
         let title = NSTextField(labelWithString: "Resolution")
         title.font = .menuFont(ofSize: 0)
@@ -54,7 +57,7 @@ final class ResolutionRow: NSView {
 
         for v in [title, icon, slider, label] { v.translatesAutoresizingMaskIntoConstraints = false; addSubview(v) }
         NSLayoutConstraint.activate([
-            title.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 22),
+            title.leadingAnchor.constraint(equalTo: leadingAnchor, constant: SliderRow.textInset),
             title.centerYAnchor.constraint(equalTo: centerYAnchor),
             title.widthAnchor.constraint(equalToConstant: 72),
             icon.leadingAnchor.constraint(equalTo: title.trailingAnchor, constant: 2),
@@ -63,7 +66,7 @@ final class ResolutionRow: NSView {
             slider.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 6),
             slider.centerYAnchor.constraint(equalTo: centerYAnchor),
             label.leadingAnchor.constraint(equalTo: slider.trailingAnchor, constant: 8),
-            label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
+            label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -18),
             label.centerYAnchor.constraint(equalTo: centerYAnchor),
             label.widthAnchor.constraint(equalToConstant: 68),
         ])

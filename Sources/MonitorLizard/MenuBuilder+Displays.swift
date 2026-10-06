@@ -91,7 +91,6 @@ extension App {
             ns.target = self
             ns.representedObject = NSNumber(value: entry.info.id)
         }
-        ns.indentationLevel = 1
         menu.addItem(ns)
     }
 

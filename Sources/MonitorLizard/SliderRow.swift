@@ -11,6 +11,9 @@ import AppKit
 /// DDC layer collapses bursts, so no debounce here.
 final class SliderRow: NSView {
     static let rowWidth: CGFloat = 260
+    /// Where a menu item's title starts, so a row's title lines up with the
+    /// ordinary items above and below it, ticked or not.
+    static let textInset: CGFloat = 30.5
     private let slider: NSSlider
     private let valueLabel = NSTextField(labelWithString: "–")
     private let format: (Double) -> String
@@ -22,6 +25,9 @@ final class SliderRow: NSView {
         self.onChange = onChange
         slider = NSSlider(value: value ?? 0, minValue: 0, maxValue: maximum, target: nil, action: nil)
         super.init(frame: NSRect(x: 0, y: 0, width: Self.rowWidth, height: 28))
+        // Stretch to the menu's width, so the slider takes up whatever room
+        // the widest item leaves.
+        autoresizingMask = [.width]
 
         let titleLabel = NSTextField(labelWithString: title)
         titleLabel.font = .menuFont(ofSize: 0)
@@ -39,7 +45,7 @@ final class SliderRow: NSView {
 
         for v in [titleLabel, icon, slider, valueLabel] { v.translatesAutoresizingMaskIntoConstraints = false; addSubview(v) }
         NSLayoutConstraint.activate([
-            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 22),
+            titleLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: SliderRow.textInset),
             titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
             titleLabel.widthAnchor.constraint(equalToConstant: 72),
             icon.leadingAnchor.constraint(equalTo: titleLabel.trailingAnchor, constant: 2),
@@ -48,7 +54,7 @@ final class SliderRow: NSView {
             slider.leadingAnchor.constraint(equalTo: icon.trailingAnchor, constant: 6),
             slider.centerYAnchor.constraint(equalTo: centerYAnchor),
             valueLabel.leadingAnchor.constraint(equalTo: slider.trailingAnchor, constant: 8),
-            valueLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
+            valueLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -18),
             valueLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
             valueLabel.widthAnchor.constraint(equalToConstant: 30),
         ])

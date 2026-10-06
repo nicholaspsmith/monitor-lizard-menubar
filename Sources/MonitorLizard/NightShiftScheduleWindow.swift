@@ -39,8 +39,8 @@ private struct NightShiftScheduleView: View {
         Form {
             Toggle("Turn Night Shift on and off automatically", isOn: binding.isEnabled)
             Section {
-                EdgeRow(title: "Turn on", sunName: "sunset", edge: binding.on)
-                EdgeRow(title: "Turn off", sunName: "sunrise", edge: binding.off)
+                EdgeRow(title: "Turn on", sunName: "sunset", edge: binding.on, sun: scheduler.nextSun(.sunset))
+                EdgeRow(title: "Turn off", sunName: "sunrise", edge: binding.off, sun: scheduler.nextSun(.sunrise))
             }
             .disabled(!scheduler.schedule.isEnabled)
             Section {
@@ -104,6 +104,8 @@ private struct EdgeRow: View {
     let title: String
     let sunName: String
     @Binding var edge: NightShiftSchedule.Edge
+    /// The next sunset or sunrise.
+    let sun: Date?
 
     var body: some View {
         Picker(title, selection: $edge.anchor) {
@@ -114,9 +116,33 @@ private struct EdgeRow: View {
             Stepper(value: $edge.offsetMinutes, in: -180...180, step: 15) {
                 Text(offsetText).foregroundStyle(.secondary)
             }
+            if let sun {
+                LabeledContent(sunLine(sun)) {
+                    Text(Self.time(sun.addingTimeInterval(TimeInterval(edge.offsetMinutes * 60))))
+                        .monospacedDigit()
+                }
+                .foregroundStyle(.secondary)
+            }
         } else {
             DatePicker("Time", selection: clockBinding, displayedComponents: .hourAndMinute)
         }
+    }
+
+    static func time(_ date: Date) -> String {
+        let f = DateFormatter()
+        f.dateStyle = .none
+        f.timeStyle = .short
+        return f.string(from: date)
+    }
+
+    /// "Sunset today 6:31 PM" / "Sunrise tomorrow 7:02 AM"
+    private func sunLine(_ sun: Date) -> String {
+        let day = Calendar.current.isDateInToday(sun) ? "today" : Calendar.current.isDateInTomorrow(sun) ? "tomorrow" : "next"
+        let name = sunName.prefix(1).uppercased() + sunName.dropFirst()
+        let action = title == "Turn on" ? "turns on" : "turns off"
+        return edge.offsetMinutes == 0
+            ? "\(name) \(day) is at \(Self.time(sun)); Night Shift \(action) at"
+            : "\(name) \(day) is at \(Self.time(sun)), so Night Shift \(action) at"
     }
 
     private var offsetText: String {
