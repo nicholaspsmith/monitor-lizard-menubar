@@ -11,7 +11,7 @@ allows (XDR).
 
 Part of [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.7.0** · [Changelog](https://github.com/nicholaspsmith/monitor-lizard-menubar/releases)
+**Version 1.10.1** · [Changelog](https://github.com/nicholaspsmith/monitor-lizard-menubar/releases)
 
 ## What you get
 
@@ -30,7 +30,7 @@ One section per display, then Night Shift for the whole Mac:
 | **Night Shift** | Toggle it, and set the warmth. |
 | **Schedule…** | Turn Night Shift on and off by itself, and ramp its warmth through the evening. The line under it says when it next turns on or off. See below. |
 | **Brightness** (built-in screen) | One slider for the whole range. The bottom fifth is **Dim**, past the lowest brightness macOS offers. The middle is macOS's own range. With **XDR Brightness** on, the top fifth brightens past full. The brightness keys walk the same ladder. See below. |
-| **XDR Brightness** | Built-in XDR panel only: extends the Brightness slider and the brightness-up key past full, into the panel's HDR headroom. Off at every launch. See below. |
+| **XDR Brightness** | Unavailable for now (see [XDR brightness](#xdr-brightness)). Built-in XDR panel only: extends the Brightness slider and the brightness-up key past full, into the panel's HDR headroom. Off at every launch. See below. |
 | **Settings ▸ Brightness Keys** | The keyboard's brightness keys step the main monitor's brightness, sixteen steps across the range, by the same route as its Brightness row. On the built-in screen they go on into Dim below macOS's lowest step, and into XDR above full. Needs Accessibility once. |
 | **✓ / ⏳ / ✗ line** | Whether Night Shift works on that display. See below. |
 | **Settings ▸** | Brightness Keys, Icon, Start at Login, and the version. |
@@ -100,6 +100,13 @@ the app quits and is off every time the app starts. Raising the brightness
 another way (Control Center, auto-brightness) cancels it.
 
 ## XDR brightness
+
+> **Unavailable for now (1.10.1).** On macOS 27 an M5 Pro/Max panel ignores
+> the brightness table this boost writes (Apple FB22273730), so the menu shows
+> **XDR Brightness · unavailable**, greyed out. It comes back with a
+> multiply-composited EDR overlay, the approach BrightIntosh uses:
+> [issue #30](https://github.com/nicholaspsmith/monitor-lizard-menubar/issues/30).
+> What follows describes it as it was.
 
 On a MacBook Pro with an XDR panel, **XDR Brightness** (under the built-in
 display) extends the built-in Brightness slider: its top fifth pushes the

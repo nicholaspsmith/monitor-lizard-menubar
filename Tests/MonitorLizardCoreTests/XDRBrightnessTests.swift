@@ -94,4 +94,20 @@ final class XDRBrightnessTests: XCTestCase {
         XCTAssertEqual(XDRGamma.factor(boost: 1, headroom: 5), 2, accuracy: 1e-6, "ramped: capped at maxFactor")
         XCTAssertEqual(XDRGamma.factor(boost: 0.5, headroom: 5), 1.5, accuracy: 1e-6)
     }
+
+    // MARK: Availability (issue #30)
+
+    func testXDRCannotBeSwitchedOnWhileUnavailable() {
+        // As shipped until the multiply overlay lands: the table boost does
+        // nothing on M5 Pro panels under macOS 27.
+        XCTAssertFalse(XDRPolicy.available)
+        XCTAssertFalse(XDRPolicy.canEnable(onBattery: false, offOnBattery: false))
+        XCTAssertFalse(XDRPolicy.canEnable(available: false, onBattery: false, offOnBattery: true))
+    }
+
+    func testWhenAvailableOnlyTheBatteryRuleCanRefuse() {
+        XCTAssertTrue(XDRPolicy.canEnable(available: true, onBattery: false, offOnBattery: true))
+        XCTAssertTrue(XDRPolicy.canEnable(available: true, onBattery: true, offOnBattery: false))
+        XCTAssertFalse(XDRPolicy.canEnable(available: true, onBattery: true, offOnBattery: true))
+    }
 }

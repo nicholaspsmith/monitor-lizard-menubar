@@ -76,6 +76,17 @@ public enum XDRGamma {
 /// gamma table happens across sleep and reconfiguration, so the table is only
 /// present while the machine is awake and the display list has settled.
 public enum XDRPolicy {
+    /// Off until the multiply-composited EDR overlay replaces the transfer
+    /// table (issue #30): on macOS 27 an M5 Pro/Max panel ignores the table
+    /// (Apple FB22273730), so the menu shows XDR Brightness greyed out.
+    public static let available = false
+
+    /// Whether switching XDR on takes: never while unavailable, and not on
+    /// battery with Off on Battery set.
+    public static func canEnable(available: Bool = available, onBattery: Bool, offOnBattery: Bool) -> Bool {
+        available && !(onBattery && offOnBattery)
+    }
+
     public static func shouldBoost(enabled: Bool, asleep: Bool, settling: Bool,
                                    onBattery: Bool, offOnBattery: Bool) -> Bool {
         enabled && !asleep && !settling && !(onBattery && offOnBattery)
