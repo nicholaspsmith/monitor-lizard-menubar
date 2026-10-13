@@ -117,7 +117,13 @@ extension App {
     private func addXDRRows(_ entry: DisplayModel.Entry, to menu: NSMenu) {
         guard xdr.isSupported(entry.info.id) else { return }
         let toggle: NSMenuItem
-        if xdr.isBlockedByBattery {
+        if !XDRPolicy.available {
+            toggle = NSMenuItem(title: "XDR Brightness · unavailable", action: nil, keyEquivalent: "")
+            toggle.isEnabled = false
+            toggle.toolTip = "Not working on macOS 27 yet: the panel ignores the brightness table XDR used. It comes back with a new method (Monitor Lizard issue #30)."
+            menu.addItem(toggle)
+            return
+        } else if xdr.isBlockedByBattery {
             toggle = NSMenuItem(title: "XDR Brightness · off on battery", action: nil, keyEquivalent: "")
             toggle.isEnabled = false
         } else {

@@ -127,7 +127,7 @@ final class XDRController {
     }
 
     func setEnabled(_ on: Bool) {
-        isEnabled = on && !isBlockedByBattery
+        isEnabled = on && XDRPolicy.canEnable(onBattery: onBattery, offOnBattery: offOnBattery)
         Log.xdr.info("XDR brightness \(self.isEnabled ? "on" : "off")")
         update()
     }
