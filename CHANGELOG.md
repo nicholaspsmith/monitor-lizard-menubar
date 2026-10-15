@@ -10,7 +10,8 @@ Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 
 ## [1.12.0] - 2026-10-15
 
-- The animated menu bar icon now moves more smoothly, with its walking speed and step height adjusting instantly to match the app's activity level.
+- Carol's headband no longer gets cut off at the top of the menu bar icon.
+- Carol's walking animation is smoother and more responsive to system activity, with her stride speed and height adjusting dynamically.
 
 ## [1.11.0] - 2026-10-15
 
