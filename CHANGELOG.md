@@ -8,6 +8,10 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.11.0] - 2026-10-15
+
+- Carol now has a new walking animation that can be triggered in the menu bar, featuring a smooth, rolling motion distinct from her previous running animation.
+
 ## [1.10.1] - 2026-10-13
 
 - XDR Brightness is greyed out ("unavailable") for now: on macOS 27 the M5 Pro screen ignores the method it used, so switching it on did nothing. A new method is planned (issue #30).
