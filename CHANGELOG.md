@@ -8,6 +8,10 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.12.0] - 2026-10-15
+
+- The animated menu bar icon now moves more smoothly, with its walking speed and step height adjusting instantly to match the app's activity level.
+
 ## [1.11.0] - 2026-10-15
 
 - Carol now has a new walking animation that can be triggered in the menu bar, featuring a smooth, rolling motion distinct from her previous running animation.
