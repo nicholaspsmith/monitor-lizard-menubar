@@ -8,6 +8,11 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.14.0] - 2026-10-15
+
+- The owl icon now supports a new "dual meter" mode where each eye independently reflects a different value, with lids dropping and colors reddening based on their respective levels.
+- You can now customize the color of the owl's pupils instead of using the default green-to-red gradient, while the whites still turn red to indicate high usage.
+
 ## [1.13.0] - 2026-10-15
 
 - Carol now sleeps in the menu bar, with her eyes closing, body breathing, and Zs floating above her.
