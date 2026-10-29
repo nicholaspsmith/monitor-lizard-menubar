@@ -8,6 +8,14 @@ without one is refused (`[no release]` in the tip commit is the only exception).
 Versions follow [Semantic Versioning](https://semver.org/). The full rule:
 [StatusItemKit — Releases](https://github.com/nicholaspsmith/StatusItemKit#releases-every-push-is-one).
 
+## [1.16.1] - 2026-10-29
+
+- The brightness keys work on an external monitor as soon as it is plugged in
+  or wakes. A monitor ignores DDC for a few seconds after waking, and that
+  first refused read used to leave the keys off until you opened the menu;
+  Monitor Lizard now asks again, backing off over about a minute.
+- A monitor that refuses contrast no longer has its brightness keys turned off.
+
 ## [1.16.0] - 2026-10-20
 
 - The Icon picker has moved from the Settings submenu to the main menu, appearing directly below the Settings option and above Quit.
