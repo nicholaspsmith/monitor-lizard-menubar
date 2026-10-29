@@ -11,7 +11,7 @@ allows (XDR).
 
 Part of [Menumon](https://menumon.nicksmith.software).
 
-**Version 1.15.1** · [Changelog](https://github.com/nicholaspsmith/monitor-lizard-menubar/releases)
+**Version 1.16.1** · [Changelog](https://github.com/nicholaspsmith/monitor-lizard-menubar/releases)
 
 ## What you get
 

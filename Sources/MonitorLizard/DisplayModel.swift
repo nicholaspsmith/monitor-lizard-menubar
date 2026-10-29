@@ -41,6 +41,10 @@ final class DisplayModel {
     var onWrite: (() -> Void)?
     var onNeedsTVFix: ((DisplayInfo) -> Void)?
     private var refreshWork: DispatchWorkItem?
+    /// Pending re-reads after a failed brightness read, and how many each
+    /// display has had (`DDCRetry`).
+    private var rereadWork: [CGDirectDisplayID: DispatchWorkItem] = [:]
+    private var rereadAttempts: [CGDirectDisplayID: Int] = [:]
 
     init(brightness: BrightnessBackend, nightShift: NightShiftBackend?, tvRoles: TVRoleTracker) {
         self.brightness = brightness
@@ -83,6 +87,9 @@ final class DisplayModel {
         // Old services are dropped wholesale: after a long sleep the display ids
         // and the AV services behind them are new objects.
         let services = IORegistryScanner.makeDDCServices(for: infos)
+        rereadWork.values.forEach { $0.cancel() }
+        rereadWork = [:]
+        rereadAttempts = [:]
         entries = infos.map { info in
             let (all, current, modes) = DisplayModes.specs(for: info.id)
             // Some external displays — TVs over HDMI, Apple and some USB-C
@@ -148,11 +155,37 @@ final class DisplayModel {
         case .success(let value):
             if code == .brightness { entries[i].brightness = value } else { entries[i].contrast = value }
             entries[i].ddcUnavailable = false
+            if code == .brightness {
+                rereadWork.removeValue(forKey: id)?.cancel()
+                rereadAttempts[id] = nil
+            }
         case .failure(let error):
             Log.ddc.error("display \(id) \(code.rawValue, format: .hex) read failed: \(String(describing: error))")
-            entries[i].ddcUnavailable = true
+            if DDCRetry.marksUnavailable(code) {
+                entries[i].ddcUnavailable = true
+                scheduleReread(id)
+            }
         }
         onChange?()
+    }
+
+    /// A monitor just plugged in or woken refuses DDC for a few seconds; ask
+    /// again rather than leave its keys off until the menu is opened.
+    private func scheduleReread(_ id: CGDirectDisplayID) {
+        guard rereadWork[id] == nil else { return }
+        let attempt = rereadAttempts[id, default: 0]
+        guard let delay = DDCRetry.delay(afterFailure: attempt) else { return }
+        rereadAttempts[id] = attempt + 1
+        let work = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            self.rereadWork[id] = nil
+            guard let ddc = self.entry(id)?.ddc else { return }
+            ddc.read(.brightness) { [weak self] result in
+                DispatchQueue.main.async { self?.store(id: id, ddc: ddc, code: .brightness, result: result) }
+            }
+        }
+        rereadWork[id] = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: work)
     }
 
     func setBrightness(_ id: CGDirectDisplayID, _ value: UInt16) { write(id, .brightness, value) }
